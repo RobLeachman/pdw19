@@ -49,6 +49,7 @@ window.onload = function() {
         width: 800,
         height: 600,
         backgroundColor: 0x000000,
+        pixelArt:true,
         scene: [bootGame, playGame]
     };
     game = new Phaser.Game(gameConfig);
@@ -76,7 +77,7 @@ class bootGame extends Phaser.Scene{
             frameWidth:90,
             frameHeight:90
         });
-        this.load.spritesheet("fuelStore", "assets/graphics/fuelStore1A.png", {
+        this.load.spritesheet("fuelStore", "assets/graphics/fuelStore1C.png", {
             frameWidth:25,
             frameHeight:25
         });
