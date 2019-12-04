@@ -3,15 +3,15 @@
  * A man walks a road,
  * driven by keypresses or swipes,
  * takes stuff and builds things,
- * somewhat ready to fail altogether
+ * generators, which make stuff, and need gas,
+ * everything somewhat ready to fail altogether
  * (BUG) like when he gets over to the drama stage
+ *
  *
  */
 
 import Base from "./base.js";
 import Generator from "./generator.js";
-
-var funZoom = true;
 
 /* global Phaser */
 var game;
@@ -43,6 +43,7 @@ const GAS = 2;
 
 var world = [];
 var didFail = false;
+var funZoom = true;
 
 export class PlayGame extends Phaser.Scene {
   constructor() {
@@ -57,6 +58,7 @@ export class PlayGame extends Phaser.Scene {
         this.cameras.main.setZoom(1.55);
         this.cameras.main.setScroll(-200,-95);
         this.add.image(0, 0, "road").setOrigin(0, 0);
+
 
         for (var spot=0;spot<9;spot++) {
             if (spot == 0) {
@@ -94,10 +96,8 @@ export class PlayGame extends Phaser.Scene {
         try {
             if (!this.man.moving && this.man.moveBuffer > -1) {
                 if (this.man.moveBuffer == INTERACT) {
-
-
                     var manAt = map[this.man.location.y][this.man.location.x][2];
-                    console.log("Interact at " + manAt);
+                    //console.log("Interact at " + manAt);
                     if (typeof manAt != "undefined")
                         world[manAt].interact(this.man);
                 } else
@@ -168,7 +168,7 @@ export class PlayGame extends Phaser.Scene {
                 this.man.moveBuffer = UP;
             }
         } else {
-            console.log('tap');
+            //console.log('tap');
             this.man.moveBuffer = INTERACT;
         }
     }
@@ -258,25 +258,6 @@ function GasFactory(game, spriteName, spot) {
     };
 }
 
-/*
-function Generator(game, spriteName, spot) {
-    this.spot = spot;
-    this.sprite = game.add.sprite(getLocationX(spot), getLocationY(spot), spriteName, 0).setOrigin(0,0);
-    this.built = false;
-
-    this.interact = function (theMan) {
-        if (!this.built) {
-           if (theMan.carrying == THING) {
-              this.sprite = game.add.sprite(getLocationX(spot), getLocationY(spot), "generator", 0).setOrigin(0,0);
-
-              theMan.sprite.setFrame(0);
-              theMan.carrying = NOTHING;
-              this.built = true;
-           }
-        }
-    };
-}
-*/
 
 /***********************************
  * MISC
