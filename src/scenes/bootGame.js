@@ -16,8 +16,21 @@ export class BootGame extends Phaser.Scene{
             frameWidth: 60,
             frameHeight: 5
         });
+        this.load.spritesheet("market", "assets/graphics/market.png", {
+            frameWidth: 90,
+            frameHeight: 90
+        });
+        this.load.spritesheet("shields", "assets/graphics/shields.png", {
+            frameWidth: 90,
+            frameHeight: 90
+        });
+        this.load.spritesheet("laser", "assets/graphics/laser.png", {
+            frameWidth: 90,
+            frameHeight: 90
+        });
 
-        this.load.spritesheet("manWithThing", "assets/graphics/manWithThing.png", {
+
+        this.load.spritesheet("manWithThing", "assets/graphics/manWithThing.png", { //???
             frameWidth: 40,
             frameHeight: 40
         });

@@ -8,13 +8,12 @@ export default function Base(game, spriteName, spot, fuelStoreSprite) {
 //function Base(game, spriteName, spot, fuelStoreSprite) {
     this.spot = spot;
     this.sprite = game.add.sprite(getLocationX(spot), getLocationY(spot), spriteName, 0).setOrigin(0,0);
-
     this.fuelStoreSprite = fuelStoreSprite;
     this.fuelBay = [10,10,10];
     this.fuelSprite = [];
-    this.fuelSprite[1] = game.add.sprite(146,175,this.fuelStoreSprite,this.fuelBay[1]).setOrigin(0,0);
-    this.fuelSprite[0] = game.add.sprite(173,175,this.fuelStoreSprite,this.fuelBay[0]).setOrigin(0,0);
-    this.fuelSprite[2] = game.add.sprite(200,175,this.fuelStoreSprite,this.fuelBay[2]).setOrigin(0,0);
+    this.fuelSprite[1] = game.add.sprite(this.sprite.x+6,this.sprite.y+35,this.fuelStoreSprite,this.fuelBay[1]).setOrigin(0,0);
+    this.fuelSprite[0] = game.add.sprite(this.sprite.x+33,this.sprite.y+35,this.fuelStoreSprite,this.fuelBay[0]).setOrigin(0,0);
+    this.fuelSprite[2] = game.add.sprite(this.sprite.x+60,this.sprite.y+35,this.fuelStoreSprite,this.fuelBay[2]).setOrigin(0,0);
 
     this.interact = function (theMan) {
         if (theMan.carrying == NOTHING) {

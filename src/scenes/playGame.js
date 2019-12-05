@@ -12,8 +12,16 @@
 
 import Base from "./base.js";
 import Generator from "./generator.js";
+import GasFactory from "./gasFactory.js";
+import BotFactory from "./botFactory.js";
+import Market from "./market.js";
+import Shields from "./shields.js";
+import Laser from "./laser.js";
+import {getLocationX, getLocationY, getMapCoords} from "./util.js";
 
 /* global Phaser */
+
+// GLOBALS
 var game;
 var gameOptions = { // will want these soon
     difficulty: 0,
@@ -28,7 +36,7 @@ const map = [
           [[35,100,0], [100,100], [165,100,1], [230,100], [295,100,2], [360,100]],
           [[35,230,3], [100,230], [165,230,4], [230,230], [295,230,5], [360,230]],
           [[35,360,6], [100,360], [165,360,7], [230,360], [295,360,8], [360,360]],
-          [[-1,-1], [-1,-1], [-1,-1], [-1,-1], [-1,-1],                [360,540], [425,540,10], [545,540,11], [665,540,12]]
+          [[-1,-1], [-1,-1], [-1,-1], [-1,-1], [-1,-1],                [360,540], [425,540,9], [545,540,10], [665,540,11]]
             ];
 
 const LEFT = 0;
@@ -44,6 +52,7 @@ const GAS = 2;
 var world = [];
 var didFail = false;
 var funZoom = true;
+var noZoom = true;
 
 export class PlayGame extends Phaser.Scene {
   constructor() {
@@ -59,6 +68,11 @@ export class PlayGame extends Phaser.Scene {
         this.cameras.main.setScroll(-200,-95);
         this.add.image(0, 0, "road").setOrigin(0, 0);
 
+        if (noZoom) {
+                   funZoom = false;
+                   this.cameras.main.setZoom(1);
+                   this.cameras.main.setScroll(0,0);
+        }
 
         for (var spot=0;spot<9;spot++) {
             if (spot == 0) {
@@ -75,18 +89,26 @@ export class PlayGame extends Phaser.Scene {
                world.push(loc);
             }
         }
+        var market = new Market(this,"market",9);
+        world.push(market);
+        var shields = new Shields(this,"shields",10);
+        world.push(shields);
+        var laser = new Laser(this,"laser",11);
+        world.push(laser);
+
+        shields.paint();
 
         this.man = {
-            location: new Phaser.Geom.Point(2,1),
-            spot: 4,
+            location: new Phaser.Geom.Point(0,0),
+            spot: 0,//4
             moving: false,
             moveBuffer: -1,
             carrying: NOTHING
         };
-
         var manCoords = getMapCoords(this.man.location);
-
         this.man.sprite = this.add.sprite(manCoords.x, manCoords.y, "man", 0).setOrigin(0,0);
+
+        this.bots = [];
 
         this.input.keyboard.on("keyup", this.handleKey, this);
         this.input.on("pointerup", this.handleSwipe, this);
@@ -99,7 +121,7 @@ export class PlayGame extends Phaser.Scene {
                     var manAt = map[this.man.location.y][this.man.location.x][2];
                     //console.log("Interact at " + manAt);
                     if (typeof manAt != "undefined")
-                        world[manAt].interact(this.man);
+                        world[manAt].interact(this.man, this.bots);
                 } else
                     this.makeMove(this.man.moveBuffer);
                 this.man.moveBuffer = -1;
@@ -144,6 +166,20 @@ export class PlayGame extends Phaser.Scene {
                 break;
             case "Space":
                 this.man.moveBuffer = INTERACT;
+                break;
+
+            case "Digit0":
+              this.man.sprite.setFrame(0);
+              this.man.carrying = NOTHING;
+              break;
+            case "Digit1":
+              this.man.sprite.setFrame(1);
+              this.man.carrying = THING;
+              break;
+            case "Digit2":
+              this.man.sprite.setFrame(2);
+              this.man.carrying = GAS;
+              break;
         }
     }
 
@@ -224,81 +260,12 @@ export class PlayGame extends Phaser.Scene {
     }
 }
 
-function BotFactory(game, spriteName, spot) {
-    this.spot = spot;
-    this.sprite = game.add.sprite(getLocationX(spot), getLocationY(spot), spriteName, 0).setOrigin(0,0);
 
-    this.interact = function (theMan) {
-        if (!this.built) {
-           if (theMan.carrying == THING) {
-              this.sprite = game.add.sprite(getLocationX(spot), getLocationY(spot), "botFactory", 0).setOrigin(0,0);
-
-              theMan.sprite.setFrame(0);
-              theMan.carrying = NOTHING;
-              this.built = true;
-           }
-        }
-    };
-}
-
-function GasFactory(game, spriteName, spot) {
-    this.spot = spot;
-    this.sprite = game.add.sprite(getLocationX(spot), getLocationY(spot), spriteName, 0).setOrigin(0,0);
-
-    this.interact = function (theMan) {
-        if (!this.built) {
-           if (theMan.carrying == THING) {
-              this.sprite = game.add.sprite(getLocationX(spot), getLocationY(spot), "gasFactory", 0).setOrigin(0,0);
-
-              theMan.sprite.setFrame(0);
-              theMan.carrying = NOTHING;
-              this.built = true;
-           }
-        }
-    };
-}
 
 
 /***********************************
  * MISC
  ***********************************/
-
-// "Translate screen locations into screen coordinates"
-function getLocationX(location) {
-    var coordX = 0;
-    if (location == 0 || location == 3 || location == 6)
-        coordX = 10;
-    if (location == 1 || location == 4 || location == 7)
-        coordX = 140;
-    if (location == 2 || location == 5 || location == 8)
-        coordX = 270;
-    return coordX;
-}
-function getLocationY(location) {
-    var coordY = 0;
-
-    if (location == 0 || location == 1 || location == 2)
-        coordY = 10;
-    if (location == 3 || location == 4 || location == 5)
-        coordY = 140;
-    if (location == 6 || location == 7 || location == 8)
-        coordY = 270;
-    return coordY;
-}
-
-function getMapCoords(goalPoint) {
-    try {
-        if (goalPoint.x < 0 || goalPoint.y < 0)
-            return null;
-        if (map[goalPoint.y][goalPoint.x][0] < 0)
-            return null;
-        if (map[goalPoint.y][goalPoint.x][1] < 0)
-            return null;
-        return new Phaser.Geom.Point(map[goalPoint.y][goalPoint.x][0], map[goalPoint.y][goalPoint.x][1]);
-    } catch (err) { // array out of bounds
-        return null;
-    }
-}
 
 function resizeGame(){
     var canvas = document.querySelector("canvas");

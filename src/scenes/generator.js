@@ -7,24 +7,26 @@ const GAS = 2;
 const VACANT = 0;
 const GENERATING = 1;
 const READY = 2;
+const EMPTY = 3;
 
 //export default function Generator(game, spriteName, spot) {
 export default class Generator {
     constructor (game,spriteName,spot) {
         this.game = game;
         this.spriteName = spriteName;
-        this.sprite = game.add.sprite(getLocationX(spot), getLocationY(spot), spriteName, 0).setOrigin(0,0);
         this.spot = spot;
+
+        this.sprite = game.add.sprite(getLocationX(spot), getLocationY(spot), spriteName, 0).setOrigin(0,0);
         this.state = VACANT;
         this.fuel = 0;
 
-              this.fakeForAnim = this.game.add.sprite(-1000,-1000, "fakeForAnim", 0).setOrigin(0,0);
-              this.game.anims.create({
-                  key: "fakeStuff",
-                      frames: this.game.anims.generateFrameNames("fakeForAnim", {start:0,end:10}),
-                      frameRate: 12,
-                      repeat: 0
-                  });
+        this.fakeForAnim = this.game.add.sprite(-1000,-1000, "fakeForAnim", 0).setOrigin(0,0);
+        this.game.anims.create({
+          key: "fakeStuff",
+              frames: this.game.anims.generateFrameNames("fakeForAnim", {start:0,end:10}),
+              frameRate: 12,
+              repeat: 0
+          });
     }
 
     interact(theMan) {
@@ -50,6 +52,15 @@ export default class Generator {
         } else {
             //console.log("you wait");
         }
+        if (theMan.carrying == GAS && this.fuel > 0) {
+            this.fuel = 0;
+            this.gauge = this.game.add.sprite(getLocationX(this.spot)+15, getLocationY(this.spot)+10, "gauges", this.fuel).setOrigin(0,0);
+            if (this.state == EMPTY) {
+               this.regenerate(false);
+            }
+            theMan.sprite.setFrame(0);
+            theMan.carrying = NOTHING;
+        }
     }
 
     regenerate(init) {
@@ -62,14 +73,15 @@ export default class Generator {
                       repeat: 0
                   });
               this.makeStuff();
-              this.guage = this.game.add.sprite(getLocationX(this.spot)+15, getLocationY(this.spot)+10, "gauges", this.fuel).setOrigin(0,0);
+              this.gauge = this.game.add.sprite(getLocationX(this.spot)+15, getLocationY(this.spot)+10, "gauges", this.fuel).setOrigin(0,0);
+              this.fuel = 0;
         } else if (this.fuel < 3) {
             this.fuel++;
-            this.guage = this.game.add.sprite(getLocationX(this.spot)+15, getLocationY(this.spot)+10, "gauges", this.fuel).setOrigin(0,0);
+            this.gauge = this.game.add.sprite(getLocationX(this.spot)+15, getLocationY(this.spot)+10, "gauges", this.fuel).setOrigin(0,0);
             if (this.fuel < 3) {
                 this.makeStuff();
-            }
-
+            } else
+                this.state = EMPTY;
         }
     }
 
