@@ -99,8 +99,8 @@ export class PlayGame extends Phaser.Scene {
         shields.paint();
 
         this.man = {
-            location: new Phaser.Geom.Point(0,0),
-            spot: 0,//4
+            location: new Phaser.Geom.Point(2,1), // 2,1
+            spot: 4,//4
             moving: false,
             moveBuffer: -1,
             carrying: NOTHING
