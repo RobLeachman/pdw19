@@ -52,7 +52,7 @@ const GAS = 2;
 var world = [];
 var didFail = false;
 var funZoom = true;
-var noZoom = true;
+var noZoom = false;
 
 export class PlayGame extends Phaser.Scene {
   constructor() {
