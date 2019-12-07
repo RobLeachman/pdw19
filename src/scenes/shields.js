@@ -5,6 +5,10 @@ const NOTHING = 0;
 const THING = 1;
 const GAS = 2;
 
+const DO_RESTBOT = 1;
+const DO_TAKESTUFF = 2;
+const DO_UPGRADE = 3;
+
 export default class Shields {
 
     constructor (game,spriteName,spot,graphics) {
@@ -56,10 +60,29 @@ export default class Shields {
         }
     }
 
+    doAction(affect) {
+        if (affect == DO_UPGRADE) {
+               this.upgrades++;
+               this.drawUpgrades();
+        }
+    }
+
     paint() {
-        var rect = new Phaser.Geom.Rectangle(400, 400, 330, 15);
-        var g = this.game.add.graphics({ fillStyle: { color: 0x0000ff } });
+        /* HARD WAY:
+        var rect = new Phaser.Geom.Rectangle(400, 380, 330, 60);
+        var g = this.game.add.graphics({ fillStyle: { color: 0xff0000 } });
         g.fillRectShape(rect);
+        */
+
+        if (1) {
+            this.shieldBlock = this.game.add.rectangle(400, 380, 330, 30, 0x006fff).setOrigin(0,0);
+            this.shieldBlock.setAlpha(.5);
+            this.game.physics.add.existing(this.shieldBlock, true);
+        }
+    }
+
+    getBlock() {
+           return this.shieldBlock;
     }
 
     drawUpgrades() {

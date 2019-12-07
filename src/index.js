@@ -1,18 +1,28 @@
 import 'phaser';
 /* global Phaser */
 
-import { SimpleScene } from './scenes/simple-scene';
 import { BootGame } from './scenes/bootGame';
 import { PlayGame } from './scenes/playGame';
+//import { TestScene } from './scenes/testScene';
 
 const gameConfig = {
+  type: Phaser.AUTO,
   width: 800,
   height: 600,
   backgroundColor: 0x000000,
   pixelArt:true,
+         physics: {
+            default: 'arcade',
+            arcade: {
+                gravity: { y: 15 },
+                debug: false
+            }
+        },
+  //scene: [BootGame, PlayGame, TestScene]
   scene: [BootGame, PlayGame]
 };
 
+//console.log("index.js init");
 var game = new Phaser.Game(gameConfig);
 
 window.onload = function() {
@@ -22,6 +32,7 @@ window.onload = function() {
 };
 
 function resizeGame(){
+    console.log("resized it!");
     var canvas = document.querySelector("canvas");
     var windowWidth = window.innerWidth;
     var windowHeight = window.innerHeight;

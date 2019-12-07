@@ -10,6 +10,7 @@
  *
  */
 
+import Constant from "../constants.js";
 import Base from "./base.js";
 import Generator from "./generator.js";
 import GasFactory from "./gasFactory.js";
@@ -17,19 +18,18 @@ import BotFactory from "./botFactory.js";
 import Market from "./market.js";
 import Shields from "./shields.js";
 import Laser from "./laser.js";
+import Mother from "./mother.js";
+import Fighter from "./fighter.js";
+import Bomb from "./bomb.js";
 import {getLocationX, getLocationY, getMapCoords} from "./util.js";
 
 /* global Phaser */
 
 // GLOBALS
-var game;
 var gameOptions = { // will want these soon
     difficulty: 0,
     testing: 1,
 
-    swipeMaxTime: 1000,
-    swipeMinDistance: 20,
-    swipeMinNormal: 0.85
 };
 
 const map = [
@@ -39,24 +39,37 @@ const map = [
           [[-1,-1], [-1,-1], [-1,-1], [-1,-1], [-1,-1],                [360,540], [425,540,9], [545,540,10], [665,540,11]]
             ];
 
-const LEFT = 0;
-const RIGHT = 1;
-const UP = 2;
-const DOWN = 3;
-const INTERACT = 4;
+const path = [
+    [[35,100], [100,100], [100,230], [165,230]],
+    [[165,100], [100,100], [100,230], [165,230]],
+    [[295,100], [230,100], [230,230], [165,230]],
+    [[35,230], [100,230], [165,230]],
+    [[230,230]], // path #4 makes no sense, already there
+    [[295,230], [230,230], [165,230]],
+    [[35,360], [100,360], [100,230], [165,230]],
+    [[165,360], [230,360], [230,230], [165,230]],
+    [[295,360], [230,360], [230,230], [165,230]], //8=gasFactory
+    [[425,540], [360,540], [360,360], [360,230], [295,230], [230,230], [165,230]],
+    [[545,540], [425,540], [360,540], [360,360], [360,230], [295,230], [230,230], [165,230]],//10=shields
+    [[665,540], [545,540], [425,540], [360,540], [360,360], [360,230], [295,230], [230,230], [165,230]]
+             ];
 
-const NOTHING = 0;
-const THING = 1;
-const GAS = 2;
 
 var world = [];
 var didFail = false;
 var funZoom = true;
-var noZoom = false;
+var noZoom = true;
+
+var fighterCount = 0;
+var shootAt = {
+    x: 0,
+    y:0
+};
 
 export class PlayGame extends Phaser.Scene {
   constructor() {
     super("PlayGame");
+    //console.log("constructed PlayGame");
   }
 
   create() {
@@ -91,41 +104,86 @@ export class PlayGame extends Phaser.Scene {
         }
         var market = new Market(this,"market",9);
         world.push(market);
-        var shields = new Shields(this,"shields",10);
-        world.push(shields);
-        var laser = new Laser(this,"laser",11);
-        world.push(laser);
+        this.shields = new Shields(this,"shields",10);
+        world.push(this.shields);
+        this.laser = new Laser(this,"laser",11);
+        world.push(this.laser);
 
-        shields.paint();
+        this.homeBlock = this.add.rectangle(400, 445, 330, 60, 0x0000ff).setOrigin(0,0);
+        this.homeBlock.setAlpha(0);
+        this.physics.add.existing(this.homeBlock, true);
+
+        this.shields.paint();
 
         this.man = {
             location: new Phaser.Geom.Point(2,1), // 2,1
             spot: 4,//4
             moving: false,
             moveBuffer: -1,
-            carrying: NOTHING
+            carrying: Constant.NOTHING
         };
         var manCoords = getMapCoords(this.man.location);
         this.man.sprite = this.add.sprite(manCoords.x, manCoords.y, "man", 0).setOrigin(0,0);
 
         this.bots = [];
 
+        this.mother = new Mother(this);
+        this.motherTimer = 0;
+
+        this.bombCount = 0;
+
         this.input.keyboard.on("keyup", this.handleKey, this);
         this.input.on("pointerup", this.handleSwipe, this);
+        this.input.on("pointerdown", this.handleMashing, this);
+        //console.log("created!");
     }
 
     update () {
         try {
             if (!this.man.moving && this.man.moveBuffer > -1) {
-                if (this.man.moveBuffer == INTERACT) {
+                if (this.man.moveBuffer == Constant.INTERACT) {
                     var manAt = map[this.man.location.y][this.man.location.x][2];
                     //console.log("Interact at " + manAt);
                     if (typeof manAt != "undefined")
-                        world[manAt].interact(this.man, this.bots);
+                        world[manAt].interact(this.man, this.bots); // pass the bots array to botFactory only
                 } else
                     this.makeMove(this.man.moveBuffer);
                 this.man.moveBuffer = -1;
             }
+
+            for (var b=0;b<this.bots.length;b++) {
+                var result = this.bots[b].act();
+                if (result.affected > 0) {
+                    //console.log("DO " + result.affect + " to " + result.affected);
+                    world[result.affected].doAction(result.affect);
+                }
+            }
+
+            if (!this.mother.isMoving()) {
+                if (++this.motherTimer > 20 && fighterCount < 1) { //20
+                    this.fighter = new Fighter(this);
+                    fighterCount = 1;
+                    //console.log("launch");
+                }
+                if (this.motherTimer > 100 && this.bombCount < 1) { //100
+                    this.bomb = new Bomb(this, this.shields, this.homeBlock, this.bombCount);
+                    this.bombCount++;
+                }
+                if (this.motherTimer > 200 && this.bombCount < 2) { //150
+                    this.bomb = new Bomb(this, this.shields, this.homeBlock, this.bombCount);
+                    this.bombCount++;
+                }
+                if (this.motherTimer > 300 && this.mother.isAlive()) {
+                    this.mother.die();
+                }
+                if (this.motherTimer > 250 && this.fighter.isAlive()) {
+                    this.fighter.die();
+                }
+            }
+
+            this.laser.shoot(shootAt.x, shootAt.y);
+
+
         } catch (err) {
             // the shit's gonna fail, try to capture a clue when it does...
             // not too bad on PC but harder on phone and this attmept is sad
@@ -140,9 +198,9 @@ export class PlayGame extends Phaser.Scene {
             ratfarts.fillStyle(0x0000FF, 1);
             var fail = new Phaser.Geom.Rectangle(0,0,800,600);
             ratfarts.fillRectShape(fail);
-            this.add.text(0, 40, err,{ font: '18px Courier' });
-            this.add.text(0, 70, "RATFARTS",{ font: '18px Courier' });
-            this.add.text(0, 100, err.stack,{ font: '18px Courier' });
+            this.add.text(0, 40, err);
+            this.add.text(0, 70, "RATFARTS");
+            this.add.text(0, 100, err.stack);
         }
     }
 
@@ -150,62 +208,74 @@ export class PlayGame extends Phaser.Scene {
         switch(e.code){
             case "KeyA":
             case "ArrowLeft":
-                this.man.moveBuffer = LEFT;
+                this.man.moveBuffer = Constant.LEFT;
                 break;
             case "KeyD":
             case "ArrowRight":
-                this.man.moveBuffer = RIGHT;
+                this.man.moveBuffer = Constant.RIGHT;
                 break;
             case "KeyW":
             case "ArrowUp":
-                this.man.moveBuffer = UP;
+                this.man.moveBuffer = Constant.UP;
                 break;
             case "KeyS":
             case "ArrowDown":
-                this.man.moveBuffer = DOWN;
+                this.man.moveBuffer = Constant.DOWN;
                 break;
             case "Space":
-                this.man.moveBuffer = INTERACT;
+                this.man.moveBuffer = Constant.INTERACT;
                 break;
 
             case "Digit0":
               this.man.sprite.setFrame(0);
-              this.man.carrying = NOTHING;
+              this.man.carrying = Constant.NOTHING;
               break;
             case "Digit1":
               this.man.sprite.setFrame(1);
-              this.man.carrying = THING;
+              this.man.carrying = Constant.THING;
               break;
             case "Digit2":
               this.man.sprite.setFrame(2);
-              this.man.carrying = GAS;
+              this.man.carrying = Constant.GAS;
               break;
+        }
+    }
+
+    handleMashing(e) {
+        if (e.downX > 400 && e.downX < 730 && e.downY < 350) {
+             shootAt.x = e.downX; shootAt.y = e.downY;
+             console.log("MASH " + shootAt.x + "," + shootAt.y);
         }
     }
 
     handleSwipe(e){
         var swipeTime = e.upTime - e.downTime;
-        var fastEnough = swipeTime < gameOptions.swipeMaxTime;
+        var fastEnough = swipeTime < Constant.swipeMaxTime;
         var swipe = new Phaser.Geom.Point(e.upX - e.downX, e.upY - e.downY);
         var swipeMagnitude = Phaser.Geom.Point.GetMagnitude(swipe);
-        var longEnough = swipeMagnitude > gameOptions.swipeMinDistance;
+        var longEnough = swipeMagnitude > Constant.swipeMinDistance;
         if(longEnough && fastEnough){
             Phaser.Geom.Point.SetMagnitude(swipe, 1);
-            if(swipe.x > gameOptions.swipeMinNormal){
-                this.man.moveBuffer = RIGHT;
+            if(swipe.x > Constant.swipeMinNormal){
+                this.man.moveBuffer = Constant.RIGHT;
             }
-            if(swipe.x < -gameOptions.swipeMinNormal){
-                this.man.moveBuffer = LEFT;
+            if(swipe.x < -Constant.swipeMinNormal){
+                this.man.moveBuffer = Constant.LEFT;
             }
-            if(swipe.y > gameOptions.swipeMinNormal){
-                this.man.moveBuffer = DOWN;
+            if(swipe.y > Constant.swipeMinNormal){
+                this.man.moveBuffer = Constant.DOWN;
             }
-            if(swipe.y < -gameOptions.swipeMinNormal){
-                this.man.moveBuffer = UP;
+            if(swipe.y < -Constant.swipeMinNormal){
+                this.man.moveBuffer = Constant.UP;
             }
         } else {
-            //console.log('tap');
-            this.man.moveBuffer = INTERACT;
+            if (e.downX > 400 && e.downX < 730 && e.downY < 350) {
+                console.log("QUIT");
+                shootAt.x = -1;
+            } else {
+                console.log("tap! " + e.downX + "," + e.downY);
+                this.man.moveBuffer = Constant.INTERACT;
+            }
         }
     }
 
@@ -214,18 +284,18 @@ export class PlayGame extends Phaser.Scene {
         var oldLocY = this.man.location.y;
         var manAt = map[this.man.location.y][this.man.location.x][2];
         switch (dir) {
-            case LEFT:
+            case Constant.LEFT:
                 this.man.location.x--;
                 break;
-            case RIGHT:
+            case Constant.RIGHT:
                 this.man.location.x++;
                 break;
-            case UP:
+            case Constant.UP:
                 this.man.location.y--;
                 if (manAt > -1)
                    this.man.location.y = -1;
                 break;
-            case DOWN:
+            case Constant.DOWN:
                 this.man.location.y++;
                 if (funZoom && this.man.location.y > 2) {
                     funZoom = false;
@@ -257,28 +327,5 @@ export class PlayGame extends Phaser.Scene {
                 }
             });
         }
-    }
-}
-
-
-
-
-/***********************************
- * MISC
- ***********************************/
-
-function resizeGame(){
-    var canvas = document.querySelector("canvas");
-    var windowWidth = window.innerWidth;
-    var windowHeight = window.innerHeight;
-    var windowRatio = windowWidth / windowHeight;
-    var gameRatio = game.config.width / game.config.height;
-    if(windowRatio < gameRatio){
-        canvas.style.width = windowWidth + "px";
-        canvas.style.height = (windowWidth / gameRatio) + "px";
-    }
-    else{
-        canvas.style.width = (windowHeight * gameRatio) + "px";
-        canvas.style.height = windowHeight + "px";
     }
 }

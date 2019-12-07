@@ -1,8 +1,5 @@
+import Constant from "../constants.js";
 import {getLocationX, getLocationY} from "./util.js";
-
-const NOTHING = 0;
-const THING = 1;
-const GAS = 2;
 
 export default class Market {
 
@@ -16,17 +13,17 @@ export default class Market {
 
     interact (theMan) {
         if (!this.built) {
-           if (theMan.carrying == THING) {
+           if (theMan.carrying == Constant.THING) {
               this.sprite = this.game.add.sprite(getLocationX(this.spot), getLocationY(this.spot), "gasFactory", 0).setOrigin(0,0);
 
               theMan.sprite.setFrame(0);
-              theMan.carrying = NOTHING;
+              theMan.carrying = Constant.NOTHING;
               this.built = true;
            }
         } else {
-           if (theMan.carrying == THING) {
+           if (theMan.carrying == Constant.THING) {
               theMan.sprite.setFrame(0);
-              theMan.carrying = NOTHING;
+              theMan.carrying = Constant.NOTHING;
               console.log("MONEY");
            }
         }

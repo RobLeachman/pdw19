@@ -1,9 +1,8 @@
 /* global Phaser */
-import {getLocationX, getLocationY} from "./util.js";
+import Constant from "../constants.js";
 
-const NOTHING = 0;
-const THING = 1;
-const GAS = 2;
+import {getLocationX, getLocationY} from "./util.js";
+import Robot from "./robot.js";
 
 export default class BotFactory {
     constructor (game,spriteName,spot) {
@@ -17,12 +16,12 @@ export default class BotFactory {
     }
 
     interact (theMan, bots) {
-        if (theMan.carrying == THING) {
+        if (theMan.carrying == Constant.THING) {
            if (!this.built) {
               this.sprite = this.game.add.sprite(getLocationX(this.spot), getLocationY(this.spot), "botFactory", 0).setOrigin(0,0);
 
               theMan.sprite.setFrame(0);
-              theMan.carrying = NOTHING;
+              theMan.carrying = Constant.NOTHING;
               this.built = true;
 
               for (var i=0;i<this.botsAvailable;i++) {
@@ -31,13 +30,16 @@ export default class BotFactory {
                   g.fillRectShape(rect);
               }
 
-           } else {
+           } else if (bots.length < 10) {
                this.botsAvailable--;
-               bots.push(1);
+               var newBot = new Robot(this.game);
+               bots.push(newBot);
                var rect2 = new Phaser.Geom.Rectangle((this.sprite.x+5)+(bots.length)*7, this.sprite.y+20, 5, 2);
                var g2 = this.game.add.graphics({ fillStyle: { color: 0xffffff } });
                g2.fillRectShape(rect2);
 
+               theMan.sprite.setFrame(0);
+               theMan.carrying = Constant.NOTHING;
            }
         }
     }

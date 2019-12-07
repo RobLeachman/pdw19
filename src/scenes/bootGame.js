@@ -1,9 +1,26 @@
+/* global Phaser */
 export class BootGame extends Phaser.Scene{
     constructor(){
         super("BootGame");
     }
     preload(){
         this.load.image("road", "assets/graphics/road3.png");
+        this.load.spritesheet("bomb", "assets/graphics/aBomb.png", {
+            frameWidth: 15,
+            frameHeight: 15
+        });
+        this.load.spritesheet("fighter", "assets/graphics/aFighter.png", {
+            frameWidth: 30,
+            frameHeight: 17
+        });
+        this.load.spritesheet("mother", "assets/graphics/aMother.png", {
+            frameWidth: 100,
+            frameHeight: 40
+        });
+        this.load.spritesheet("robot", "assets/graphics/aBot.png", {
+            frameWidth: 40,
+            frameHeight: 40
+        });
         this.load.spritesheet("man", "assets/graphics/aMan.png", {
             frameWidth: 40,
             frameHeight: 40
