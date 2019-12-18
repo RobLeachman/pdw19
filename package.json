@@ -1,0 +1,23 @@
+{
+  "name": "pdw2019",
+  "version": "1.0.0",
+  "description": "Produce Defend Win! 2019 js module version",
+  "repository": "https://github.com/RobLeachman/pdw19",
+  "author": "Rob Leachman",
+  "license": "MIT",
+  "private": true,
+  "devDependencies": {
+    "babel-core": "6",
+    "babel-loader": "^7.0.0",
+    "babel-preset-env": "^1.7.0",
+    "copy-webpack-plugin": "^4.5.1",
+    "webpack": "^3.0.0",
+    "webpack-dev-server": "^2.0.0"
+  },
+  "dependencies": {
+    "phaser": "^3.21.0"
+  },
+  "scripts": {
+    "build": "webpack -p"
+  }
+}
