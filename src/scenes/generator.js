@@ -1,4 +1,6 @@
 import Constant from "../constants.js";
+import { assetsDPR } from '../index.js';
+import Sprite from "../sprite.js";
 import {getLocationX, getLocationY} from "./util.js";
 
 const VACANT = 0;
@@ -6,86 +8,80 @@ const GENERATING = 1;
 const READY = 2;
 const EMPTY = 3;
 
-//export default function Generator(game, spriteName, spot) {
+const GENERATOR_SPEED=30;
+
+/**
+ * Construct a new generator at the given spot and with the indicated sprite,
+ * vacant state, and with an animation ready to play when transitioning to
+ * state ready, or empty when we're out of fuel. The first generator is pre-built
+ * using a different sprite, and we call regen to set the state for that one.
+ */
 export default class Generator {
     constructor (game,spriteName,spot) {
         this.game = game;
         this.spriteName = spriteName;
         this.spot = spot;
 
-        this.sprite = game.add.sprite(getLocationX(spot), getLocationY(spot), spriteName, 0).setOrigin(0,0);
+        this.sprite = new Sprite(this.game, getLocationX(this.spot), getLocationY(this.spot), "bigBackground", spriteName).setOrigin(0,0);
         this.state = VACANT;
-        this.fuel = 0;
 
-        this.fakeForAnim = this.game.add.sprite(-1000,-1000, "fakeForAnim", 0).setOrigin(0,0);
-        this.game.anims.create({
-          key: "fakeStuff",
-              frames: this.game.anims.generateFrameNames("fakeForAnim", {start:0,end:10}),
-              frameRate: 12,
-              repeat: 0
-          });
+        this.genSprite = new Sprite(this.game, this.sprite.x/assetsDPR+36,this.sprite.y/assetsDPR+40, "bigBackground", "generating/1");
+        this.genSprite.alpha = 0;
+        var frameNames = this.game.anims.generateFrameNames('bigBackground', {
+                         start: 14, end: 1,
+                         prefix: 'generating/'
+                     });
+        this.game.anims.create({key:'generateStuff', frames:frameNames, frameRate:GENERATOR_SPEED});
     }
 
     interact(theMan) {
         if (this.state == VACANT) {
-           if (theMan.carrying == Constant.THING) {
-              this.sprite = this.game.add.sprite(getLocationX(this.spot), getLocationY(this.spot), "generator", 0).setOrigin(0,0);
-              //this.genSprite = this.game.add.sprite(getLocationX(this.spot)+5, getLocationY(this.spot)+15, "generated", 0).setOrigin(0,0);
-                    //enviro.screen.blit(self.genImage[self.processCount-1], [coordX+5,coordY+15])
+           if (theMan.isCarrying() == Constant.THING) {
+              this.sprite.setFrame("generator").setOrigin(0,0);
 
-              theMan.sprite.setFrame(0);
-              theMan.carrying = Constant.NOTHING;
+              theMan.isNowCarrying(Constant.NOTHING);
               this.regenerate(true);
-
            }
         } else if (this.state == READY) {
-            if (theMan.carrying == Constant.NOTHING) {
-               theMan.carrying = Constant.THING;
-               theMan.sprite.setFrame(1);
-               this.genSprite.alpha = 0;
+            if (theMan.isCarrying() == Constant.NOTHING) {
+               theMan.isNowCarrying(Constant.THING);
+               //this.genSprite.alpha = 0;
                this.regenerate(false);
             }
         } else {
             //console.log("you wait, either generating or empty");
         }
-        if (theMan.carrying == Constant.GAS && this.fuel > 0 && this.state != GENERATING) {
-            theMan.sprite.setFrame(0);
-            theMan.carrying = Constant.NOTHING;
-            var wasEmpty = (this.fuel > 3);
-
-            this.fuel = 0;
-            this.gauge = this.game.add.sprite(getLocationX(this.spot)+15, getLocationY(this.spot)+10, "gauges", this.fuel).setOrigin(0,0);
-            if (wasEmpty)
+        if (theMan.isCarrying() == Constant.GAS && this.fuel < 3) {
+            theMan.isNowCarrying(Constant.NOTHING);
+            this.fuel = 3;
+            if (this.state == EMPTY) {
                 this.regenerate(false);
+            } else {
+                this.gauge = new Sprite(this.game, this.sprite.x/assetsDPR+36,this.sprite.y/assetsDPR+22, "bigBackground", "gauge/gauge" + this.fuel);
+            }
         }
     }
 
+    // init with full tank and a thing, then make more if fueled, set state empty when no more fuel
     regenerate(init) {
+        this.genSprite.alpha = 0;
         if (init) {
-              this.genSprite = this.game.add.sprite(getLocationX(this.spot)+5, getLocationY(this.spot)+15, "generated", 0).setOrigin(0,0);
-              this.game.anims.create({
-                  key: "generateStuff",
-                      frames: this.game.anims.generateFrameNames('generated', {start:0,end:10}),
-                      frameRate: 12,
-                      repeat: 0
-                  });
-              this.makeStuff();
-              this.gauge = this.game.add.sprite(getLocationX(this.spot)+15, getLocationY(this.spot)+10, "gauges", this.fuel).setOrigin(0,0);
-              this.fuel = 0;
-        } else if (this.fuel < 3) {
-            this.makeStuff();
-
-            this.fuel++;
-            if (this.fuel > 2)
-                this.state = EMPTY;
-            this.gauge = this.game.add.sprite(getLocationX(this.spot)+15, getLocationY(this.spot)+10, "gauges", this.fuel).setOrigin(0,0);
+            this.makeThing();
+            this.fuel = 3;
+            this.gauge = new Sprite(this.game, this.sprite.x/assetsDPR+36,this.sprite.y/assetsDPR+22, "bigBackground", "gauge/gauge" + this.fuel);
+        } else if (this.fuel > 0) {
+            this.makeThing();
+            this.fuel--;
+        } else {
+            this.state = EMPTY;
         }
+        this.gauge.setFrame("gauge/gauge" + this.fuel);
     }
 
-    makeStuff() {
+    makeThing() {
           this.state = GENERATING;
           this.genSprite.alpha = 1;
-          this.genSprite.play("generateStuff");
+          this.genSprite.anims.play('generateStuff');
           this.genSprite.on('animationcomplete', function() {
               this.state = READY;
           }, this);

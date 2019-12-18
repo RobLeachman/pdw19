@@ -1,31 +1,24 @@
-import Constant from "../constants.js";
-import {getLocationX, getLocationY} from "./util.js";
+import Location from "./location.js";
+import { assetsDPR } from '../index.js';
 
-export default class Market {
+export default class Market extends Location {
 
     constructor (game,spriteName,spot) {
-        this.game = game;
-        this.spot = spot;
-        this.spriteName = spriteName;
-        this.sprite = this.game.add.sprite(getLocationX(this.spot), getLocationY(this.spot), spriteName, 0).setOrigin(0,0);
-        this.built = true;
+        super(game,spriteName,spot);
+        this.score = 0;
+        this.displayScore = this.game.add.bitmapText(325*assetsDPR, 416*assetsDPR, 'gameplay-black', "$0",10*assetsDPR);
+        this.displayScore.setAlpha(0);
     }
 
     interact (theMan) {
-        if (!this.built) {
-           if (theMan.carrying == Constant.THING) {
-              this.sprite = this.game.add.sprite(getLocationX(this.spot), getLocationY(this.spot), "gasFactory", 0).setOrigin(0,0);
-
-              theMan.sprite.setFrame(0);
-              theMan.carrying = Constant.NOTHING;
-              this.built = true;
-           }
-        } else {
-           if (theMan.carrying == Constant.THING) {
-              theMan.sprite.setFrame(0);
-              theMan.carrying = Constant.NOTHING;
-              console.log("MONEY");
-           }
+        if (theMan.hasThing()) {
+            theMan.nowHasNothing();
+            this.score += 1000;
+            this.displayScore.setAlpha(1);
+            this.displayScore.setText(`\$${this.score}`);
         }
+    }
+    getScore() {
+        return this.score;
     }
 }

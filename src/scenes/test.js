@@ -1,7 +1,8 @@
+/* global Phaser */
 export class TestScene extends Phaser.Scene {
   constructor() {
     super("TestScene");
-    console.log("constructed TestScene");
+    console.log("WOULD YOU CARE TO PLAY A GAME?");
   }
 
   create() {

@@ -1,46 +1,63 @@
 /* global Phaser */
 import Constant from "../constants.js";
-
+import Sprite from "../sprite.js";
 import {getLocationX, getLocationY} from "./util.js";
 import Robot from "./robot.js";
 
+/**
+ * Once built, keep a list of available bots and spawn as required.
+ */
 export default class BotFactory {
-    constructor (game,spriteName,spot) {
+    constructor (game,spot) {
         this.game = game;
-        this.spriteName = spriteName;
         this.spot = spot;
 
-        this.sprite = this.game.add.sprite(getLocationX(this.spot), getLocationY(this.spot), spriteName, 0).setOrigin(0,0);
+        this.sprite = new Sprite(this.game, getLocationX(this.spot), getLocationY(this.spot), "bigBackground", "botFactoryPad").setOrigin(0,0);
         this.built = false;
         this.botsAvailable = 10;
+        this.botList = [];
+
+        // two rows, lazy way
+        for (var i=0;i<this.botsAvailable/2;i++) {
+            var botCounter = {
+                x: getLocationX(this.spot)+4+(i*12.5),
+                y: getLocationY(this.spot)+53,
+                sprite: new Sprite(this.game, getLocationX(this.spot)+4+(i*12.5), getLocationY(this.spot)+53, "bigBackground", "botCounter").setOrigin(0,0),
+            };
+            botCounter.sprite.setAlpha(1);
+            this.botList.push(botCounter);
+        }
+        for (var i=0;i<this.botsAvailable/2;i++) {
+            botCounter = {
+                x: getLocationX(this.spot)+4+(i*12.5),
+                y: getLocationY(this.spot)+56,
+                sprite: new Sprite(this.game, getLocationX(this.spot)+4+(i*12.5), getLocationY(this.spot)+56, "bigBackground", "botCounter").setOrigin(0,0)
+            };
+            botCounter.sprite.setAlpha(1);
+            this.botList.push(botCounter);
+        }
     }
 
     interact (theMan, bots) {
-        if (theMan.carrying == Constant.THING) {
+        if (theMan.hasThing()) {
            if (!this.built) {
-              this.sprite = this.game.add.sprite(getLocationX(this.spot), getLocationY(this.spot), "botFactory", 0).setOrigin(0,0);
-
-              theMan.sprite.setFrame(0);
-              theMan.carrying = Constant.NOTHING;
-              this.built = true;
-
-              for (var i=0;i<this.botsAvailable;i++) {
-                  var rect = new Phaser.Geom.Rectangle((this.sprite.x+5)+(i+1)*7, this.sprite.y+20, 5, 2);
-                  var g = this.game.add.graphics({ fillStyle: { color: 0xff0000 } });
-                  g.fillRectShape(rect);
-              }
-
+               this.build();
+               theMan.nowHasNothing();
            } else if (bots.length < 10) {
+               theMan.nowHasNothing();
                this.botsAvailable--;
+               this.botList[bots.length].sprite.setAlpha(0);
+
                var newBot = new Robot(this.game);
                bots.push(newBot);
-               var rect2 = new Phaser.Geom.Rectangle((this.sprite.x+5)+(bots.length)*7, this.sprite.y+20, 5, 2);
-               var g2 = this.game.add.graphics({ fillStyle: { color: 0xffffff } });
-               g2.fillRectShape(rect2);
-
-               theMan.sprite.setFrame(0);
-               theMan.carrying = Constant.NOTHING;
            }
         }
+    }
+    build() {
+        this.sprite.setFrame("botFactory").setOrigin(0,0);
+        for (var i=0;i<this.botList.length;i++) {
+          this.botList[i].sprite.setAlpha(1);
+        }
+        this.built = true;
     }
 }

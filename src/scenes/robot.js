@@ -1,6 +1,8 @@
 /* global Phaser */
 import Constant from "../constants.js";
-import {getLocationX, getLocationY, getMapCoords} from "./util.js";
+import { assetsDPR } from '../index.js';
+import {getLocationX, getLocationY, getMapCoords, getSpotAtLocation} from "./util.js";
+import Sprite from "../sprite.js";
 
 const NOTHING = 0;
 const THING = 1;
@@ -13,15 +15,15 @@ const GOTGAS = 3;
 const UPGRADE = 4;
 
 const paths = [
-    [[35,100], [100,100], [100,230], [165,230]],
-    [[165,100], [100,100], [100,230], [165,230]],
-    [[295,100], [230,100], [230,230], [165,230]],
-    [[35,230], [100,230], [165,230]],
-    [[230,230]], // path #4 makes no sense, already there
-    [[295,230], [230,230], [165,230]],
-    [[35,360], [100,360], [100,230], [165,230]],
-    [[165,360], [230,360], [230,230], [165,230]],
-    [[295,360], [230,360], [230,230], [165,230]],
+    [[0,0], [1,0], [1,1], [2,1]],
+    [[2,0], [3,0], [3,1], [2,1]],
+    [[4,0], [3,0], [3,1], [2,1]],
+    [[0,1], [1,1], [2,1]],
+    [[2,1]], // path #4 makes no sense, already there
+    [[4,1], [3,1], [2,1]],
+    [[0,2], [1,2], [1,1], [2,1]],
+    [[2,2], [2,3], [2,2], [2,1]],
+    [[2,4], [2,3], [2,2], [2,1]],
     [[425,540], [360,540], [360,360], [360,230], [295,230], [230,230], [165,230]],
     [[545,540], [425,540], [360,540], [360,360], [360,230], [295,230], [230,230], [165,230]],
     [[665,540], [545,540], [425,540], [360,540], [360,360], [360,230], [295,230], [230,230], [165,230]]
@@ -38,10 +40,10 @@ export default class Robot {
         this.carrying = NOTHING;
 
         var botCoords = getMapCoords(this.location);
-        this.sprite = this.game.add.sprite(botCoords.x, botCoords.y, "robot", 0).setOrigin(0,0);
-        //this.sprite = this.game.add.sprite(35,100, "robot", 0).setOrigin(0,0);
+        this.sprite  = new Sprite(this.game, botCoords.x+18, botCoords.y+72, "bigBackground", "flatbot/bot0empty").setOrigin(0,0);
 
-        this.didTest = false;
+        this.nextStep = new Phaser.Geom.Point(0,1);
+        this.didTest = true;
     }
 
     act() {
@@ -58,24 +60,25 @@ export default class Robot {
                case RETURNING:
                case GETGAS:
                case GOTGAS:
-                    var next = paths[this.path][this.step + dir];
-                    if (typeof next != "undefined") {
-                        //console.log("next:" + next[0] + "," + next[1]);
+                    if (typeof paths[this.path][this.step + dir] != "undefined") {
+                        this.nextStep.x = paths[this.path][this.step + dir][0];
+                        this.nextStep.y = paths[this.path][this.step + dir][1];
+
+                        this.next = getMapCoords(this.nextStep);
                         this.moving = true;
                         this.step += dir;
                         this.game.tweens.add({
                             targets: [this.sprite],
-                            duration: 400,
-                            x:next[0],
-                            y:next[1],
+                            duration:100,
+                            x:(this.next.x+18)*assetsDPR,
+                            y:(this.next.y+72)*assetsDPR,
                             callbackScope: this,
                             onComplete: function() {
                                 this.moving = false;
-                                //alert("moved");
                             }
                         });
                     } else {
-                       //this.game.add.text(0, 420, "THERE NOW");
+                       console.log("there now");
                        if (this.state == GETGAS) {
                            this.state = GOTGAS;
                            this.location = new Phaser.Geom.Point(4,2);
@@ -105,6 +108,7 @@ export default class Robot {
                                this.step = 0;
                                this.didTest = true;
                            } else {
+                               console.log("let's rest");
                                this.state = RESTING;
                                this.sprite.setAlpha(0);
                                result.affected = 4;

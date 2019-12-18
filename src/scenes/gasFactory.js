@@ -1,4 +1,6 @@
 import Constant from "../constants.js";
+import { assetsDPR, WIDTH, HEIGHT } from '../index.js';
+import Sprite from "../sprite.js";
 import {getLocationX, getLocationY} from "./util.js";
 
 export default class GasFactory {
@@ -7,22 +9,17 @@ export default class GasFactory {
         this.game = game;
         this.spot = spot;
         this.spriteName = spriteName;
-        this.sprite = this.game.add.sprite(getLocationX(this.spot), getLocationY(this.spot), spriteName, 0).setOrigin(0,0);
+        this.sprite = new Sprite(this.game, getLocationX(this.spot), getLocationY(this.spot), "bigBackground", spriteName).setOrigin(0,0);
     }
 
     interact (theMan) {
-        if (!this.built) {
-           if (theMan.carrying == Constant.THING) {
-              this.sprite = this.game.add.sprite(getLocationX(this.spot), getLocationY(this.spot), "gasFactory", 0).setOrigin(0,0);
-
-              theMan.sprite.setFrame(0);
-              theMan.carrying = Constant.NOTHING;
+        if (theMan.isCarrying(Constant.THING)) {
+           if (!this.built) {
+              this.sprite.setFrame("gasFactory").setOrigin(0,0);
               this.built = true;
-           }
-        } else {
-           if (theMan.carrying == Constant.THING) {
-              theMan.sprite.setFrame(2);
-              theMan.carrying = Constant.GAS;
+              theMan.isNowCarrying(Constant.NOTHING);
+           } else {
+              theMan.isNowCarrying(Constant.GAS);
            }
         }
     };

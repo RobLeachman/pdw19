@@ -1,21 +1,33 @@
+import { assetsDPR } from '../index.js';
+import Sprite from '../sprite.js';
+
 export default class Mother {
 
     constructor (game) {
         this.game = game;
         this.moving = true;
-        this.sprite = this.game.add.sprite(900, 0, "mother", 0).setOrigin(0,0);
+        this.alive = true;
+
+        this.sprite = new Sprite(this.game, 650, 7, "bigBackground", "mother/0");
         this.sprite.on('animationcomplete', this.sheDead, this);
         this.game.tweens.add({
             targets: [this.sprite],
             duration: 3000, //3000
-            x:525,
+            x:450*assetsDPR,
             callbackScope: this,
             onComplete: function() {
                 this.moving = false;
-                //alert("moved");
             }
         });
-        this.alive = true;
+
+        var testPix = this.game.add.graphics({
+            x:0,
+            y:0
+        });
+        testPix.lineStyle(5,0x808080);
+        testPix.strokeRect(620*assetsDPR,300*assetsDPR,40,240);
+        testPix.closePath();
+
     }
 
     isMoving() {
@@ -23,15 +35,13 @@ export default class Mother {
     }
 
     die() {
-        //console.log("like tears in the rain");
         this.alive = false;
-        this.game.anims.create({
-                  key: "SheDead",
-                      frames: this.game.anims.generateFrameNames("mother", {start:0,end:10}),
-                      frameRate: 10,
-                      repeat: 0
-                  });
-        this.sprite.play("SheDead");
+        var frameNames = this.game.anims.generateFrameNames('bigBackground', {
+                         start: 1, end: 12,
+                         prefix: 'mother/'
+                     });
+        this.game.anims.create({key:"deadMother", frames:frameNames, frameRate:12});
+        this.sprite.anims.play("deadMother");
     }
 
     isAlive() {

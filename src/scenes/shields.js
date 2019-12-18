@@ -1,4 +1,8 @@
 /* global Phaser */
+import Constant from "../constants.js";
+import FueledLocation from "./fueledLocation.js";
+import { assetsDPR, WIDTH, HEIGHT } from '../index.js';
+import Sprite from "../sprite.js";
 import {getLocationX, getLocationY} from "./util.js";
 
 const NOTHING = 0;
@@ -9,55 +13,10 @@ const DO_RESTBOT = 1;
 const DO_TAKESTUFF = 2;
 const DO_UPGRADE = 3;
 
-export default class Shields {
-
-    constructor (game,spriteName,spot,graphics) {
-        this.game = game;
-        this.spot = spot;
-        this.spriteName = spriteName;
-        this.graphics = graphics;
-        this.sprite = this.game.add.sprite(getLocationX(this.spot), getLocationY(this.spot), spriteName, 0).setOrigin(0,0);
+export default class Shields extends FueledLocation {
+    constructor (game,spriteName,spot) {
+        super(game,spriteName,spot);
         this.built = true;
-        this.upgrades = 1;
-
-        this.fuelStoreSprite = "fuelStore";
-        this.fuelBay = [0,10,10];
-        this.fuelSprite = [];
-        this.fuelSprite[1] = game.add.sprite(this.sprite.x+6,this.sprite.y+44,this.fuelStoreSprite,this.fuelBay[1]).setOrigin(0,0);
-        this.fuelSprite[0] = game.add.sprite(this.sprite.x+33,this.sprite.y+44,this.fuelStoreSprite,this.fuelBay[0]).setOrigin(0,0);
-        this.fuelSprite[2] = game.add.sprite(this.sprite.x+60,this.sprite.y+44,this.fuelStoreSprite,this.fuelBay[2]).setOrigin(0,0);
-        this.drawUpgrades();
-    }
-
-    interact (theMan) {
-        if (!this.built) {
-           if (theMan.carrying == THING) {
-              this.sprite = this.game.add.sprite(getLocationX(this.spot), getLocationY(this.spot), "gasFactory", 0).setOrigin(0,0);
-
-              theMan.sprite.setFrame(0);
-              theMan.carrying = NOTHING;
-              this.built = true;
-           }
-        } else {
-           if (theMan.carrying == THING) {
-               var empty = this.fuelBay.findIndex(function(t) {
-                   console.log(t);
-                   return (t == 0);
-               });
-               console.log(empty);
-               if (0<=empty) {
-                   this.fuelBay[empty] = 10;
-                   this.fuelSprite[empty].setFrame(10);
-                   theMan.sprite.setFrame(0);
-                   theMan.carrying = NOTHING;
-               }
-           } else if (theMan.carrying == GAS && this.upgrades < 11) {
-               this.upgrades++;
-               this.drawUpgrades();
-               theMan.sprite.setFrame(0);
-               theMan.carrying = NOTHING;
-           }
-        }
     }
 
     doAction(affect) {
@@ -85,17 +44,87 @@ export default class Shields {
            return this.shieldBlock;
     }
 
-    drawUpgrades() {
-        //for i in range(0, self.upgrades):
-        //    pygame.draw.rect(enviro.screen, [130,202,253], [left+6+i*7,top+73,5,5], 0)
+    paintShieldBars(level) {
+        var shieldBarWork = [];
 
-        var rect = new Phaser.Geom.Rectangle(this.sprite.x+4, this.sprite.y+71, 80, 9);
-        var g = this.game.add.graphics({ fillStyle: { color: 0x0000ff } });
-        g.fillRectShape(rect);
-        for (var u=0;u<this.upgrades;u++) {
-            rect = new Phaser.Geom.Rectangle(this.sprite.x+6+u*7, this.sprite.y+73, 5, 5);
-            g = this.game.add.graphics({ fillStyle: { color: 0x82CAFD } });
-            g.fillRectShape(rect);
+        var remain = level;
+        var spreadTotal = 0;
+        var painted = 0;
+
+        // as many as 10 bars need to be painted
+        for (var bar=0;bar<10;bar++) {
+
+            // the boring base height: each bar can be up to 10 high, the last might be shorter, and then 0 for all the rest
+            var base =Math.max(0,Math.min(10,level-bar*10));
+            if (base > 0)
+               painted++; // yeah count the number of bars we're gonna paint
+            remain = remain - base;
+            var spread = base + remain; // spread them out in interesting fashion
+            shieldBarWork.push(spread);
+            spreadTotal += spread; // ... and beyond that your guess is as good as mine, will try harder next time
         }
+        //console.log("painting " + painted + " bars");
+
+        var shieldBar = [];
+        var finalSumHack = 0;
+        for (bar=0;bar<10;bar++) {
+            var final = Math.round(level*shieldBarWork[bar]/spreadTotal,0);
+            shieldBar.push(final);
+            finalSumHack += final;
+        }
+        shieldBar[0] += level - finalSumHack;
+
+        var bottom = 150;
+        var shieldPix = this.game.add.graphics({
+            x:0,
+            y:0
+        });
+
+        let shieldScale = .5;
+        let offset = 280;
+        for (bar=0;bar<10;bar++) {
+            var alpha = (level-bar*10)/10;
+            if (alpha>1)
+               alpha = 1;
+            //console.log("BAR " + bar + " ALPHA " + alpha);
+            //console.log(alpha + " " + shieldBar[bar]);
+            if (alpha > 0) {
+                var top = bottom - shieldBar[bar] +1;
+
+                shieldPix.fillStyle(this.fullColorHex ((9-bar)*15,25*bar*(10/painted),255), alpha);
+                if (level == 100 && bar==0) {
+                    //console.log("top " + (top*shieldScale+offset));
+                    //shieldPix.fillStyle(0xff0000, alpha);
+                }
+                shieldPix.fillRect(318*assetsDPR,(top*shieldScale+offset)*assetsDPR,298*assetsDPR,shieldBar[bar]*shieldScale*assetsDPR);
+                bottom = top-1;
+            }
+        }
+
+        // scaling hasn't killed me yet, but close
+        /*
+        shieldPix.lineStyle(1,0xff0000);
+        shieldPix.strokeRect(0,216,500,19);
+        shieldPix.lineStyle(1,0x00ff00);
+        shieldPix.strokeRect(0,416*assetsDPR,500,19);
+        console.log("ugh " + 416*assetsDPR);
+        */
+        shieldPix.closePath();
+        return shieldPix;
+    }
+
+    colorToHex (rgb) {
+        var hex = Number(Math.round(rgb)).toString(16);
+        if (hex.length < 2) {
+            hex = "0" + hex;
+        }
+        return hex;
+    }
+
+    fullColorHex (r,g,b) {
+        var red = this.colorToHex(r);
+        var green = this.colorToHex(g);
+        var blue = this.colorToHex(b);
+        return parseInt(red+green+blue,16);
     }
 }

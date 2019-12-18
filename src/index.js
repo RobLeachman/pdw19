@@ -5,45 +5,71 @@ import { BootGame } from './scenes/bootGame';
 import { PlayGame } from './scenes/playGame';
 //import { TestScene } from './scenes/testScene';
 
+/* yannick's https://github.com/yandeu/phaser3-optimal-resolution */
+const roundHalf = num => Math.round(num * 2) / 2;
+
+const graphicsSettings = { best: 1, medium: 0.75, low: 0.5 };
+
+
+
+// we want to scale our window according to the device capabilities...
+//const DPR = window.devicePixelRatio * graphicsSettings.best;
+
+// but, for now let's be sure it looks nice while testing!
+const DPR = 2; // so it looks nice while testing?
+
+
+
+
+const { width, height } = window.screen;
+//const width = window.innerWidth;
+//const height = window.innerHeight;
+
+
+// base resolution is 640x480 @4
+//export const WIDTH = Math.round(Math.max(width, height) * DPR);
+//export const HEIGHT = Math.round(Math.min(width, height) * DPR);
+export const WIDTH = 640 * DPR
+export const HEIGHT = 480 * DPR
+
+// will be 1, 1.5, 2, 2.5, 3, 3.5 or 4
+export const assetsDPR = roundHalf(Math.min(Math.max(HEIGHT / 480, 1), 4));
+
+
+
+
+
+
+
+console.log('DPR = ', DPR);
+console.log('assetsDPR = ', assetsDPR);
+console.log('WIDTH = ', WIDTH);
+console.log('HEIGHT = ', HEIGHT);
+
 const gameConfig = {
-  type: Phaser.AUTO,
-  width: 800,
-  height: 600,
-  backgroundColor: 0x000000,
+  backgroundColor: 0x111111,
+
+  scale: {
+    parent: 'phaser-game',
+    mode: Phaser.Scale.FIT,
+    autoCenter: Phaser.Scale.CENTER_BOTH,
+    width: WIDTH,
+    height: HEIGHT
+  },
+
   pixelArt:true,
-         physics: {
-            default: 'arcade',
-            arcade: {
-                gravity: { y: 15 },
-                debug: false
-            }
-        },
+  physics: {
+      default: 'arcade',
+      arcade: {
+          gravity: { y: 15 },
+          debug: false
+      }
+  },
   //scene: [BootGame, PlayGame, TestScene]
   scene: [BootGame, PlayGame]
 };
 
-//console.log("index.js init");
-var game = new Phaser.Game(gameConfig);
 
-window.onload = function() {
-  window.focus();
-  resizeGame();
-  window.addEventListener("resize", resizeGame);
-};
-
-function resizeGame(){
-    console.log("resized it!");
-    var canvas = document.querySelector("canvas");
-    var windowWidth = window.innerWidth;
-    var windowHeight = window.innerHeight;
-    var windowRatio = windowWidth / windowHeight;
-    var gameRatio = game.config.width / game.config.height;
-    if(windowRatio < gameRatio){
-        canvas.style.width = windowWidth + "px";
-        canvas.style.height = (windowWidth / gameRatio) + "px";
-    }
-    else{
-        canvas.style.width = (windowHeight * gameRatio) + "px";
-        canvas.style.height = windowHeight + "px";
-    }
-}
+window.addEventListener('load', () => {
+  new Phaser.Game(gameConfig);
+});

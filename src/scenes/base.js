@@ -1,34 +1,58 @@
 /* global Phaser */
 import Constant from "../constants.js";
+import { assetsDPR, WIDTH, HEIGHT } from '../index.js';
+import Sprite from "../sprite.js";
 import {getLocationX, getLocationY} from "./util.js";
+import FueledLocation from "./fueledLocation.js";
 
 //TODO: this should be a class, duh
-export default class Base {
-    constructor(game, spriteName, spot, fuelStoreSprite) {
+export default class Base extends FueledLocation {
+    constructor(game, spriteName, spot) {
+        super(game,spriteName,spot);
+
         this.game = game;
         this.spriteName = spriteName; // TODO: no
         this.spot = spot;
-        this.fuelStoreSprite = fuelStoreSprite;
 
-        this.sprite = game.add.sprite(getLocationX(spot), getLocationY(spot), spriteName, 0).setOrigin(0,0);
-        this.fuelBay = [10,10,10];
-        this.fuelSprite = [];
-        this.fuelSprite[1] = game.add.sprite(this.sprite.x+6,this.sprite.y+35,this.fuelStoreSprite,this.fuelBay[1]).setOrigin(0,0);
-        this.fuelSprite[0] = game.add.sprite(this.sprite.x+33,this.sprite.y+35,this.fuelStoreSprite,this.fuelBay[0]).setOrigin(0,0);
-        this.fuelSprite[2] = game.add.sprite(this.sprite.x+60,this.sprite.y+35,this.fuelStoreSprite,this.fuelBay[2]).setOrigin(0,0);
         this.botCount = 0;
+
+        this.fuelBay = [0,0,0]; // or maybe we start with one or more here?
+        this.drawFuelBays();
+
+        // need multiple inheritance here, otherwise... same code as botFactory:
+        this.botsAvailable = 10;
+        this.botList = [];
+        this.botsResting = 0;
+
+        // two rows, lazy way
+        for (var i=0;i<this.botsAvailable/2;i++) {
+            var botCounter = {
+                x: getLocationX(this.spot)+4+(i*12.5),
+                y: getLocationY(this.spot)+53,
+                sprite: new Sprite(this.game, getLocationX(this.spot)+4+(i*12.5), getLocationY(this.spot)+53, "bigBackground", "botCounter").setOrigin(0,0),
+            };
+            botCounter.sprite.setAlpha(0);
+            this.botList.push(botCounter);
+        }
+        for (var i=0;i<this.botsAvailable/2;i++) {
+            botCounter = {
+                x: getLocationX(this.spot)+4+(i*12.5),
+                y: getLocationY(this.spot)+56,
+                sprite: new Sprite(this.game, getLocationX(this.spot)+4+(i*12.5), getLocationY(this.spot)+56, "bigBackground", "botCounter").setOrigin(0,0)
+            };
+            botCounter.sprite.setAlpha(0);
+            this.botList.push(botCounter);
+        }
     }
 
     interact (theMan) {
-        if (theMan.carrying == Constant.NOTHING) {
+        if (theMan.isCarrying() == Constant.NOTHING) {
            if (this.takeStuff()) {
-               theMan.sprite.setFrame(1);
-               theMan.carrying = Constant.THING;
+               theMan.isNowCarrying(Constant.THING);
            }
-        } else if (theMan.carrying == Constant.THING) {
+        } else if (theMan.isCarrying() == Constant.THING) {
            if (this.stashStuff()) {
-              theMan.sprite.setFrame(0);
-              theMan.carrying = Constant.NOTHING;
+               theMan.isNowCarrying(Constant.NOTHING);
            }
         }
     }
@@ -37,10 +61,7 @@ export default class Base {
         var rect, g;
         switch (affect) {
             case Constant.DO_RESTBOT:
-                  this.botCount++;
-                  rect = new Phaser.Geom.Rectangle((this.sprite.x+5)+(this.botCount)*7, this.sprite.y+20, 5, 2);
-                  g = this.game.add.graphics({ fillStyle: { color: 0xff0000 } });
-                  g.fillRectShape(rect);
+                  this.botList[this.botsResting++].sprite.setAlpha(1);
                   break;
             case Constant.DO_TAKESTUFF:
                   this.takeStuff();
@@ -57,7 +78,7 @@ export default class Base {
         for (var x=0;x<3;x++) {
             if (this.fuelBay[x] > 0) {
                this.fuelBay[x] = 0;
-               this.repaint();
+               this.drawFuelBays();
                return true;
             }
         }
@@ -68,16 +89,12 @@ export default class Base {
         for (var x=0;x<3;x++) {
             if (this.fuelBay[x] == 0) {
                this.fuelBay[x] = 10;
-               this.repaint();
+               this.drawFuelBays();
                return true;
             }
         }
         return false;
     }
 
-    repaint () {
-           this.fuelSprite[0].setFrame(this.fuelBay[0]);
-           this.fuelSprite[1].setFrame(this.fuelBay[1]);
-           this.fuelSprite[2].setFrame(this.fuelBay[2]);
-    }
+
 }
