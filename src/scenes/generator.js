@@ -24,6 +24,7 @@ export default class Generator {
 
         this.sprite = new Sprite(this.game, getLocationX(this.spot), getLocationY(this.spot), "bigBackground", spriteName).setOrigin(0,0);
         this.state = VACANT;
+        this.collectPending = false;
 
         this.genSprite = new Sprite(this.game, this.sprite.x/assetsDPR+36,this.sprite.y/assetsDPR+40, "bigBackground", "generating/1");
         this.genSprite.alpha = 0;
@@ -61,6 +62,14 @@ export default class Generator {
             }
         }
     }
+    doAction (affect) {
+        switch (affect) {
+            case Constant.DO_TAKESTUFF:
+                this.collectionCompleted();
+                this.regenerate(false);
+                break;
+        }
+    }
 
     // init with full tank and a thing, then make more if fueled, set state empty when no more fuel
     regenerate(init) {
@@ -85,5 +94,18 @@ export default class Generator {
           this.genSprite.on('animationcomplete', function() {
               this.state = READY;
           }, this);
+    }
+
+    isReadyToCollect() {
+        return this.state == READY && (!this.collectPending);
+    }
+    collectionPending() {
+        this.collectPending = true;
+    }
+    collectionCompleted() {
+        this.collectPending = false;
+    }
+    needsGas() {
+        return this.state == EMPTY;
     }
 }

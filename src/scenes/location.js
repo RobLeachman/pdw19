@@ -1,6 +1,4 @@
-/* global Phaser */
 import {getLocationX, getLocationY} from "./util.js";
-//import { assetsDPR, WIDTH, HEIGHT } from '../index.js';
 import Sprite from "../sprite.js";
 
 export default class Location {

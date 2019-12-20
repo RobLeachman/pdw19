@@ -1,6 +1,6 @@
 /* global Phaser */
-import Constant from "../constants.js";
 import FueledLocation from "./fueledLocation.js";
+import { assetsDPR } from '../index.js';
 //import { assetsDPR, WIDTH, HEIGHT } from '../index.js';
 
 export default class Laser extends FueledLocation {
@@ -17,29 +17,59 @@ export default class Laser extends FueledLocation {
 
 
     shoot(x,y) {
+        //console.log(`SHOOT ${x},${y}`);
         if (x>0) {
             if (this.heat > 50) {
-                console.log("overheating!");
+                //console.log("overheating!");
                 this.isShooting = false;
             } else {
                 if (!this.isShooting) {
-                    console.log("start shooting ");
-                    console.log("SHOOT IT " + x + "," + y);
+                    //console.log("start shooting ");
+                    //console.log("SHOOT IT " + x + "," + y);
                     this.isShooting = true;
-                    this.line = this.game.add.line(0,0,683,450,x,y,0xff0000).setOrigin(0,0);
+                    this.targetX = x; this.targetY = y;
+                    this.line = this.game.add.line(0,0,580*assetsDPR,367*assetsDPR,x,y,0xff0000).setOrigin(0,0);
+                    this.hitCircle = new Phaser.Geom.Circle(x,y,100);
+                    this.testCircle = this.game.add.graphics({
+                      x:0,
+                      y:0
+                    });
+                    this.testCircle.lineStyle(5,0xff0000);
+                    this.testCircle.strokeCircleShape(this.hitCircle);
+                    this.testCircle.closePath();
                 }
             }
             this.heat++;
         } else if (this.isShooting) {
-                console.log("stop shooting");
+                //console.log("stop shooting");
                 this.isShooting = false;
                 this.line.setAlpha(0);
+                this.testCircle.setAlpha(0);
                 this.heat = 0;
         } else {
             this.heat = 0;
         }
     }
 
-    chill() {
+    isShooting() {
+        //console.log(`IsShooting? ${this.isShooting}`);
+        return this.isShooting;
+    }
+
+    // obviously an array or something.... for now just make the things explode =)
+    lockTarget(mother, fighter) {
+        var victim = null;
+        if (Phaser.Geom.Circle.ContainsPoint(this.hitCircle, mother.sprite)) {
+            victim = mother;
+        }
+        if (Phaser.Geom.Circle.ContainsPoint(this.hitCircle, fighter.sprite)) {
+            victim = fighter;
+        }
+        return victim;
+    }
+
+    victory() {
+        this.line.setAlpha(0);
+        this.testCircle.setAlpha(0);
     }
 }

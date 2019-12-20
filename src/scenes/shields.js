@@ -1,9 +1,6 @@
 /* global Phaser */
-import Constant from "../constants.js";
 import FueledLocation from "./fueledLocation.js";
-import { assetsDPR, WIDTH, HEIGHT } from '../index.js';
-import Sprite from "../sprite.js";
-import {getLocationX, getLocationY} from "./util.js";
+import { assetsDPR} from '../index.js';
 
 const NOTHING = 0;
 const THING = 1;
@@ -17,6 +14,52 @@ export default class Shields extends FueledLocation {
     constructor (game,spriteName,spot) {
         super(game,spriteName,spot);
         this.built = true;
+
+                    //this.hitRect = new Phaser.Geom.Rectangle(318*assetsDPR,310*assetsDPR,270*assetsDPR,20*assetsDPR);
+
+        //this.shieldBody = this.game.add.rectangle(318*assetsDPR, 310*assetsDPR, 270*assetsDPR, 20*assetsDPR, 0x00ff00).setOrigin(0,0);
+        this.shieldBody = this.game.add.rectangle(0, 310*assetsDPR, 2270*assetsDPR, 20*assetsDPR, 0x00ff00).setOrigin(0,0);
+        this.shieldBody.setAlpha(0);
+        this.game.physics.add.existing(this.shieldBody, false);
+        this.shieldBody.body.immovable = true;
+        this.shieldBody.body.allowGravity = false;
+
+        this.level = 30;
+        var newTop = this.paintShieldBars(this.level);
+        if (newTop > 0) {
+            //console.log(`new top ${newTop}`);
+        }
+
+        this.oldLevel = this.level;
+
+        this.chargeLevel = 100;
+        this.chargeRate = 8;
+        this.chargeCount = 0;
+    }
+
+    getBlock() {
+        //console.log("DEFENDER");
+        //console.log(`y=${this.shieldBody.y}`);
+        return this.shieldBody; //TODO: perhaps we can use shieldPix?
+    }
+
+    update() {
+        this.chargeCount++;
+        if (this.chargeCount < this.chargeRate)
+            return;
+        this.chargeCount = 0;
+        if (this.level < this.chargeLevel)
+            this.level++;
+        var newTop = this.paintShieldBars(this.level);
+        if (newTop > 0)
+            this.shieldBody.setY(newTop*4);
+    }
+
+    hit() {
+        this.level = this.level - 20;
+        if (this.level < 0)
+            this.level = 0;
+        this.chargeCount = Number.MAX_VALUE;
     }
 
     doAction(affect) {
@@ -26,25 +69,34 @@ export default class Shields extends FueledLocation {
         }
     }
 
-    paint() {
-        /* HARD WAY:
-        var rect = new Phaser.Geom.Rectangle(400, 380, 330, 60);
-        var g = this.game.add.graphics({ fillStyle: { color: 0xff0000 } });
-        g.fillRectShape(rect);
-        */
+    upgrade() {
+        //TODO: how to extend base class function???????????????????????????????????
+        // for now I copied these 2 lines, and there are only 2 lines to copy but...
+        this.upgrades++;
+        this.upgradeSprite.setFrame(`upgrades/${this.upgrades}`).setOrigin(0,0);
 
-        if (1) {
-            this.shieldBlock = this.game.add.rectangle(400, 380, 330, 30, 0x006fff).setOrigin(0,0);
-            this.shieldBlock.setAlpha(.5);
-            this.game.physics.add.existing(this.shieldBlock, true);
+        this.chargeLevel += 10;
+    }
+
+
+
+    // Paint the fancy shield, updating an aggregate of all the bars used to clear the previous paint
+    paintShieldBars() {
+        if (this.level == this.oldLevel)
+            return -1;
+        this.oldLevel = this.level;
+        var level = this.level;//TODO: fix, don't need two variables
+        //console.log(`set to level ${level}`);
+
+        if (typeof this.shieldPix != "undefined") { // start over
+            this.shieldPix.destroy();
         }
-    }
+        if (level < 1) {
+            console.log("oh shit no shield");
+            this.shieldBody.setY(360*assetsDPR);
+            return;
+        }
 
-    getBlock() {
-           return this.shieldBlock;
-    }
-
-    paintShieldBars(level) {
         var shieldBarWork = [];
 
         var remain = level;
@@ -55,9 +107,9 @@ export default class Shields extends FueledLocation {
         for (var bar=0;bar<10;bar++) {
 
             // the boring base height: each bar can be up to 10 high, the last might be shorter, and then 0 for all the rest
-            var base =Math.max(0,Math.min(10,level-bar*10));
+            var base = Math.max(0,Math.min(10,level-bar*10));
             if (base > 0)
-               painted++; // yeah count the number of bars we're gonna paint
+               painted++; // count the number of bars we're gonna paint
             remain = remain - base;
             var spread = base + remain; // spread them out in interesting fashion
             shieldBarWork.push(spread);
@@ -75,6 +127,7 @@ export default class Shields extends FueledLocation {
         shieldBar[0] += level - finalSumHack;
 
         var bottom = 150;
+        var blockHeight = 0;
         var shieldPix = this.game.add.graphics({
             x:0,
             y:0
@@ -97,20 +150,21 @@ export default class Shields extends FueledLocation {
                     //shieldPix.fillStyle(0xff0000, alpha);
                 }
                 shieldPix.fillRect(318*assetsDPR,(top*shieldScale+offset)*assetsDPR,298*assetsDPR,shieldBar[bar]*shieldScale*assetsDPR);
+                blockHeight += shieldBar[bar]*shieldScale; //accumulate the height of all the bars... TODO: finalSumHack?
                 bottom = top-1;
             }
         }
 
-        // scaling hasn't killed me yet, but close
-        /*
-        shieldPix.lineStyle(1,0xff0000);
-        shieldPix.strokeRect(0,216,500,19);
-        shieldPix.lineStyle(1,0x00ff00);
-        shieldPix.strokeRect(0,416*assetsDPR,500,19);
-        console.log("ugh " + 416*assetsDPR);
-        */
         shieldPix.closePath();
-        return shieldPix;
+        this.shieldPix = shieldPix;
+
+        // the actual collision body
+        var shieldTop = (top*shieldScale+offset)*assetsDPR;
+        //console.log(`top=${shieldTop}`);
+        this.shieldBody.setY(shieldTop);
+
+        //console.log(`   top block ${blockTop}  height ${blockHeight}`);
+        //this.shieldBody.setY(blockTop);
     }
 
     colorToHex (rgb) {

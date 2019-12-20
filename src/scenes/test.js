@@ -1,4 +1,7 @@
 /* global Phaser */
+import { assetsDPR } from '../index.js';
+import Sprite from "../sprite.js";
+
 export class TestScene extends Phaser.Scene {
   constructor() {
     super("TestScene");
@@ -6,27 +9,31 @@ export class TestScene extends Phaser.Scene {
   }
 
   create() {
-    var segTop = 300;
-    var segBottom;
-    console.log("start" + segTop);
-    var fun = [2,4,5,6,7,7,7,7,7,8];
-    var fun = [20,20,20,20,20,20,20,20,20,20];
-    for (var i=fun.length;i>0;i--) {
-      segBottom = segTop;
-      segTop = segTop - fun[i-1];
-      console.log(fun[i-1] + " " + segTop + " " + segBottom);
-      var blue = 255 * (i/10);
-      console.log(i + " BLUE " +blue );
-      var notBlue = i*25;
-      //console.log("blue:"+blue + "notBlue:" + notBlue);
-      //this.add.rectangle(0, segTop, 800, segBottom-segTop, blue + (notBlue/250)*0x00ff00).setOrigin(0,0);
-      //this.add.rectangle(0, segTop, 800, 20, blue + (notBlue/300)*0x00ff00).setOrigin(0,0);
-      this.add.rectangle(0, segTop, 800, 20, blue).setOrigin(0,0);
 
+    var blockTop = 350;
+    var blockBottom = 20;
+
+    this.box = this.add.rectangle(318*assetsDPR, blockTop*assetsDPR, 270*assetsDPR, blockBottom*assetsDPR, 0x808080).setOrigin(0,0);
+    this.physics.add.existing(this.box, false);
+    this.box.body.immovable = true;
+
+    this.theseSprites = [];
+    for (var i=0;i<3;i++) {
+      this.theseSprites[i] = this.physics.add.sprite((500+i*20)*assetsDPR, (blockTop-i*50-50)*assetsDPR, "bigBackground", "bomb/0", 0);
+      this.theseSprites[i].setAcceleration(0,100);
+      this.physics.add.overlap(this.theseSprites[i], this.box, this.absorbed, null, this);
     }
-    //this.cameras.main.setZoom(1.55);
-    //this.cameras.main.setScroll(-200,-95);
-        //this.shieldBlock = this.add.rectangle(0, 100, 800, 50, 0x006fff).setOrigin(0,0);
-        //this.shieldBlock.setAlpha(.5);
+
+  }
+
+  update() {
+    this.box.y = this.box.y - 5;
+  }
+
+  absorbed (sprite){
+    console.log("absorbed!");
+    new Sprite(this, sprite.x/assetsDPR, sprite.y/assetsDPR, "bigBackground", "bomb/0");
+    sprite.disableBody(true,true); // get rid of the physical one
+
   }
 }

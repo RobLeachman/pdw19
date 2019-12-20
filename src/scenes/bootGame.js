@@ -15,5 +15,7 @@ export class BootGame extends Phaser.Scene{
 
     create() {
         this.scene.start("PlayGame");
+        //:w
+        this.scene.start("TestScene");
     }
 }

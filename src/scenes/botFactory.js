@@ -1,5 +1,3 @@
-/* global Phaser */
-import Constant from "../constants.js";
 import Sprite from "../sprite.js";
 import {getLocationX, getLocationY} from "./util.js";
 import Robot from "./robot.js";
@@ -24,7 +22,7 @@ export default class BotFactory {
                 y: getLocationY(this.spot)+53,
                 sprite: new Sprite(this.game, getLocationX(this.spot)+4+(i*12.5), getLocationY(this.spot)+53, "bigBackground", "botCounter").setOrigin(0,0),
             };
-            botCounter.sprite.setAlpha(1);
+            botCounter.sprite.setAlpha(0);
             this.botList.push(botCounter);
         }
         for (var i=0;i<this.botsAvailable/2;i++) {
@@ -33,7 +31,7 @@ export default class BotFactory {
                 y: getLocationY(this.spot)+56,
                 sprite: new Sprite(this.game, getLocationX(this.spot)+4+(i*12.5), getLocationY(this.spot)+56, "bigBackground", "botCounter").setOrigin(0,0)
             };
-            botCounter.sprite.setAlpha(1);
+            botCounter.sprite.setAlpha(0);
             this.botList.push(botCounter);
         }
     }

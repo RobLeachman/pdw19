@@ -7,13 +7,20 @@
  * everything somewhat ready to fail altogether
  * (BUG) like when he gets over to the drama stage
  *
- *
+ * TODO's:
+ * - shoot bombs too!
+ * -
+ * - keep working on scaling
+ * - vertical map for better phone fun (2.0?)
+
  */
 /* global Phaser */
 import { assetsDPR, WIDTH, HEIGHT } from '../index.js';
 import Sprite from "../sprite.js";
 
 import Constant from "../constants.js";
+import {getSpotAtLocation} from "./util.js";
+
 import Human from "./human.js";
 import Base from "./base.js";
 import Generator from "./generator.js";
@@ -25,35 +32,20 @@ import Laser from "./laser.js";
 import Mother from "./mother.js";
 import Fighter from "./fighter.js";
 import Bomb from "./bomb.js";
-import {getLocationX, getLocationY, getMapCoords, getSpotAtLocation} from "./util.js";
 
 
 // GLOBALS
-var gameOptions = { // will want these soon
+/* will want these soon
+var gameOptions = {
     difficulty: 0,
     testing: 1,
-
 };
+*/
 
-const path = [
-    [[35,100], [100,100], [100,230], [165,230]],
-    [[165,100], [100,100], [100,230], [165,230]],
-    [[295,100], [230,100], [230,230], [165,230]],
-    [[35,230], [100,230], [165,230]],
-    [[230,230]], // path #4 makes no sense, already there
-    [[295,230], [230,230], [165,230]],
-    [[35,360], [100,360], [100,230], [165,230]],
-    [[165,360], [230,360], [230,230], [165,230]],
-    [[295,360], [230,360], [230,230], [165,230]], //8=gasFactory
-    [[425,540], [360,540], [360,360], [360,230], [295,230], [230,230], [165,230]],
-    [[545,540], [425,540], [360,540], [360,360], [360,230], [295,230], [230,230], [165,230]],//10=shields
-    [[665,540], [545,540], [425,540], [360,540], [360,360], [360,230], [295,230], [230,230], [165,230]]
-             ];
-
-        // 2,1 normal start
-        // 5,2 is corner
-        // 8,3 is laser
-var manStart = { x: 0, y: 0};
+var manStart = { x: 2, y: 1};
+// 2,1 normal start
+// 5,2 is corner
+// 8,3 is laser
 
 var world = [];
 var bots = [];
@@ -67,6 +59,8 @@ var shootAt = {
     y:0
 };
 
+var gameOver = false;
+
 export class PlayGame extends Phaser.Scene {
   constructor() {
     super("PlayGame");
@@ -76,25 +70,23 @@ export class PlayGame extends Phaser.Scene {
 /**************************************
  * INIT
  **************************************/
-        let { width, height } = this.cameras.main;
-        width /= assetsDPR;
-        height /= assetsDPR;
-        //this.testBackground = new Sprite(this, 0,0, "roadtest").setOrigin(0,0); //fits nicely!
-        this.background  = new Sprite(this, 0,0, "bigBackground", "road4").setOrigin(0,0); //TODO: don't need to store it?
+        //let { width, height } = this.cameras.main;
+        //width /= assetsDPR;
+        //height /= assetsDPR;
+
+        this.theShield = new Phaser.GameObjects.Rectangle(this,200,200,300,300,0x0000ff,1);
         this.add.text(50*assetsDPR, 330*assetsDPR, "assetsDPR: " + assetsDPR,{ font: '18px Verdana' });
         this.add.text(50*assetsDPR, 350*assetsDPR, "WIDTH: " +WIDTH,{ font: '12px Verdana' });
         this.add.text(150*assetsDPR, 350*assetsDPR, "HEIGHT: " +HEIGHT,{ font: '12px Verdana' });
 
-
         //this.cameras.main.setBounds(0,0,800,600);
-        this.cameras.main.setZoom(1.50);
-        this.cameras.main.setScroll(-100*assetsDPR,-72*assetsDPR);
-        // bottom row
-        //this.cameras.main.setZoom(1.50); this.cameras.main.setScroll(120*assetsDPR,100*assetsDPR);
+
+        this.cameras.main.setZoom(1.50); this.cameras.main.setScroll(-100*assetsDPR,-72*assetsDPR); // perfect!
+        //this.cameras.main.setZoom(1.50); this.cameras.main.setScroll(120*assetsDPR,100*assetsDPR); //bottom row
         if (noZoom) {
                    funZoom = false;
-                   this.cameras.main.setZoom(1);
-                   this.cameras.main.setScroll(0,0);
+                   this.cameras.main.setZoom(1); this.cameras.main.setScroll(0,0);
+                   //this.cameras.main.setZoom(3); this.cameras.main.setScroll(200*assetsDPR,100*assetsDPR);
         }
 
         // init every location
@@ -124,10 +116,12 @@ export class PlayGame extends Phaser.Scene {
         world.push(this.laser);
         firstGenerator.regenerate(true);
 
-        //TEST
-        var f = new Fighter(this);
-        botFactory.build();
+        //TEST!
+//        var testFighter = new Fighter(this);
+        //botFactory.build();
+        //gasFactory.build();
 
+if (!noZoom) {
         this.text = "HEY FIRST, THANKS FOR\nPLAYING MY GAME!\n\n\
 SEE THE BLUE\n\
 GENERATOR WITH\n\
@@ -143,22 +137,18 @@ YOU'RE AWESOME,\n\
 HAVE FUN AND\n\
 TRY NOT TO DIE!";
         this.instructions = this.add.bitmapText(320*assetsDPR, 10*assetsDPR, 'gameplay-white', this.text ,10*assetsDPR);
+}
 
-/*
-// bomb collision test block
-        this.homeBlock = this.add.rectangle(400, 445, 330, 60, 0x0000ff).setOrigin(0,0);
+        // bomb collision test block
+        this.homeBlock = this.add.rectangle(300*assetsDPR, 350*assetsDPR, 329*assetsDPR, 10*assetsDPR, 0xff0000).setOrigin(0,0);
         this.homeBlock.setAlpha(0);
         this.physics.add.existing(this.homeBlock, true);
-
-*/
 
         var start = new Phaser.Geom.Point(manStart.x,manStart.y); //TODO: a little clumbsy, but nice for testing vs having to edit the class
         this.man = new Human(this,start);
 
-
-/*
-//rush to graphics:
-        this.bombCount = 0; */
+        this.bombCount = 0;
+        this.bombList = [];
 
         this.mother = new Mother(this);
         this.motherTimer = 0;
@@ -168,6 +158,18 @@ TRY NOT TO DIE!";
         this.input.on("pointerdown", this.handleMashing, this);
 
         this.man.isNowCarrying(Constant.THING);
+
+        // test where we can shoot
+        /*
+        var shootBox = this.add.graphics({
+            x:0,
+            y:0
+        });
+        shootBox.lineStyle(assetsDPR,0xff0000);
+        shootBox.strokeRect(315*assetsDPR,0,300*assetsDPR,360*assetsDPR);
+        shootBox.closePath();
+        */
+
     }
 
 /**********************************
@@ -175,6 +177,8 @@ TRY NOT TO DIE!";
  **********************************/
 
     update () {
+        if (gameOver)
+            return;
         try {
             if (!this.man.isMoving() && this.man.getBuffer() > -1) {
                 if (this.man.getBuffer() == Constant.INTERACT) {
@@ -188,31 +192,64 @@ TRY NOT TO DIE!";
                 //console.log(world[9].getScore());// GET SCORE FROM MARKET
             }
 
-
+            // PLAN
+            // If we can find a resting bot and a generator with a thing, plan to go get it
             for (var b=0;b<bots.length;b++) {
-                var result = bots[b].act();
+                if(bots[b].isResting()) {
+                   for(var i=0;i<world.length;i++) {
+                       if (world[i] instanceof Generator && world[i].isReadyToCollect()) {
+                           console.log("go get " + i);
+                           world[i].collectionPending(); // update the generator, the thing will be collected soon
+                           bots[b].getThing(i); // tell this bot to get the thing
+                       }
+                   }
+                }
+            }
+/*TODO something like this, is next:
+            // If we can find a resting bot, a generator which needs gas, and a thing, refuel it
+            for (var b=0;b<bots.length;b++) {
+                if(bots[b].isResting()) {
+                   for(var i=0;i<world.length;i++) {
+                       if (world[i] instanceof Generator && world[i].needsGas()) {
+                           console.log("go get " + i);
+                           world[i].collectionPending(); // update the generator, the thing will be collected soon
+                           bots[b].getThing(i); // tell this bot to get the thing
+                       }
+                   }
+                }
+            }
+*/
+
+            // ACT
+            for (var b=0;b<bots.length;b++) {
+                var result = bots[b].act(world); // take the next step in the path, and when we've arrived signal the affected location
                 if (result.affected > 0) {
                     console.log("DO " + result.affect + " to " + result.affected);
                     world[result.affected].doAction(result.affect);
                 }
             }
 
+            this.shields.update();
+
             if (!this.mother.isMoving()) {
                 if (++this.motherTimer > 20 && fighterCount < 1) { //20
                     this.fighter = new Fighter(this);
                     fighterCount = 1;
-                    //console.log("launch");
                 }
                 if (this.motherTimer > 100 && this.bombCount < 1) { //100
-                    this.bomb = new Bomb(this, this.shields, this.homeBlock, this.bombCount);
+                    this.bomb = new Bomb(this, this.shields, this.homeBlock, this.bombCount, this.cameras.main);
                     this.bombCount++;
+                    this.bombList.push(this.bomb); //TODO: inadequate, the list will get too long... find previous dead in list and use that slot
                 }
-                if (this.motherTimer > 200 && this.bombCount < 2) { //150
-                    this.bomb = new Bomb(this, this.shields, this.homeBlock, this.bombCount);
+                if (this.motherTimer > 250 && this.bombCount < 2) { //150
+                    this.bomb = new Bomb(this, this.shields, this.homeBlock, this.bombCount, this.cameras.main);
                     this.bombCount++;
+                    this.bombList.push(this.bomb);
                 }
-                if (this.motherTimer > 10 && this.mother.isAlive()) {
-                    this.mother.die();
+                if (this.motherTimer > 330 && this.bombCount < 3) { //150
+                    this.bomb = new Bomb(this, this.shields, this.homeBlock, this.bombCount, this.cameras.main);
+                    this.bombCount++;
+                    this.bombList.push(this.bomb);
                 }
                 /*
                 if (this.motherTimer > 250 && this.fighter.isAlive()) {
@@ -222,26 +259,50 @@ TRY NOT TO DIE!";
             }
 
             this.laser.shoot(shootAt.x, shootAt.y);
+            if (this.laser.isShooting) {
+                var victim = this.laser.lockTarget(this.mother, this.fighter);
+                var hackDone=1;
+                if (victim != null) {
+                    hackDone = victim.getShot();
+                } else
+                    console.log("miss");
+                if (hackDone < 0) {
+                    this.laser.victory();
+                }
+            }
+            // check for winner
+            for (var b=0;b<this.bombList.length;b++) {
+                if (this.bombList[b].status == 2) {
+                   console.log("IT IS OVER");
+                   gameOver = true;
+                   this.cameras.main.flash(500,0xffffff);
+                   this.cameras.main.pan(this.bombList[b].sprite.x, this.bombList[b].sprite.y, 2800, 'Linear');
+                   this.cameras.main.zoomTo(5, 2800);
+                }
 
+            }
 
         } catch (err) {
             // the shit's gonna fail, try to capture a clue when it does...
             // not too bad on PC but harder on phone and this attempt is sad,
             // but everything is blue if we get here at all.
             if (didFail) { // we need one more frame update to display the error
-                throw ("the wheels, they have come off the wagon again")
+                throw ("the wheels, they have come off the wagon again");
             }
             console.log("ERROR " + err);
             console.log("STACK " + err.stack);
             didFail = true;
 
+            this.cameras.main.setZoom(1);
+            this.cameras.main.setScroll(0,0);
             var ratfarts = this.add.graphics();
             ratfarts.fillStyle(0x0000FF, 1);
             var fail = new Phaser.Geom.Rectangle(0,0,WIDTH,HEIGHT);
             ratfarts.fillRectShape(fail);
-            this.add.text(0, 40, err).setFontSize(20).setResolution(24000);
-            this.add.text(0, 70, "RATFARTS");
-            this.add.text(0, 100, err.stack).setFontSize(20).setResolution(8000);
+
+            this.add.text(0, 40, err).setFontSize(10*assetsDPR).setResolution(24000);
+            this.add.text(0, 120, "RATFARTS").setFontSize(10*assetsDPR).setResolution(24000);
+            this.add.text(0, 200, err.stack).setFontSize(10*assetsDPR).setResolution(24000);
         }
     }
 
@@ -291,13 +352,23 @@ TRY NOT TO DIE!";
             case "Digit2":
               this.man.isNowCarrying(Constant.GAS);
               break;
+            case "Digit4":
+              this.cameras.main.shake(50,.01);
+              this.shields.hit();
+              break;
+            case "Digit5":
+              this.bomb = new Bomb(this, this.shields, this.homeBlock, this.bombCount);
+              this.bombCount++;
+              this.bombList.push(this.bomb);
+              break;
         }
     }
 
     handleMashing(e) {
-        if (e.downX > 400 && e.downX < 730 && e.downY < 350) {
+        //console.log(`shoot ${e.downX},${e.downY}`);
+        if (e.downX > 315*assetsDPR && e.downY < 360*assetsDPR) {
              shootAt.x = e.downX; shootAt.y = e.downY;
-             console.log("MASH " + shootAt.x + "," + shootAt.y);
+             //console.log("MASH " + shootAt.x + "," + shootAt.y);
         }
     }
 
@@ -307,7 +378,8 @@ TRY NOT TO DIE!";
         var swipe = new Phaser.Geom.Point(e.upX - e.downX, e.upY - e.downY);
         var swipeMagnitude = Phaser.Geom.Point.GetMagnitude(swipe);
         var longEnough = swipeMagnitude > Constant.swipeMinDistance;
-        if(longEnough && fastEnough){
+
+        if (longEnough && fastEnough) {
             Phaser.Geom.Point.SetMagnitude(swipe, 1);
             if(swipe.x > Constant.swipeMinNormal){
                 this.man.setBuffer(Constant.RIGHT);
@@ -321,14 +393,12 @@ TRY NOT TO DIE!";
             if(swipe.y < -Constant.swipeMinNormal){
                 this.man.setBuffer(Constant.UP);
             }
+        } else if (e.downX > 315*assetsDPR && e.downY < 360*assetsDPR) {
+            //console.log("QUIT");
+            shootAt.x = -1;
         } else {
-            if (e.downX > 400 && e.downX < 730 && e.downY < 350) {
-                console.log("QUIT");
-                shootAt.x = -1;
-            } else {
-                //console.log("tap! " + e.downX + "," + e.downY);
-                this.man.setBuffer(Constant.INTERACT);
-            }
+            //console.log("tap! " + e.downX + "," + e.downY);
+            this.man.setBuffer(Constant.INTERACT);
         }
     }
 

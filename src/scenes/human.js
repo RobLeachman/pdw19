@@ -1,9 +1,6 @@
-/* global Phaser */
 import Constant from "../constants.js";
 import { assetsDPR } from '../index.js';
-import {getLocationX, getLocationY, getMapCoords, getSpotAtLocation} from "./util.js";
-
-//import { assetsDPR, WIDTH, HEIGHT } from '../index.js';
+import {getMapCoords, getSpotAtLocation} from "./util.js";
 import Sprite from "../sprite.js";
 
 export default class Human {

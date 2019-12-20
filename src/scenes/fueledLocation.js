@@ -1,4 +1,3 @@
-/* global Phaser */
 import Location from "./location.js";
 //import { assetsDPR, WIDTH, HEIGHT } from '../index.js';
 import Sprite from "../sprite.js";
