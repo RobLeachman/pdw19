@@ -27,12 +27,14 @@ module.exports = {
       }
     ]
   },
+
+/* My AWS Cloud9 setup requries this: */
 /*
- * My aws version
   devServer: {
 	  contentBase: path.resolve(__dirname, 'build'),port:8081,public:'pdw.bounceme.net:8081', host:'0.0.0.0'
   },
 */
+
 
   plugins: [
 
