@@ -11,10 +11,7 @@ export default class Laser extends FueledLocation {
 
         this.isShooting = false;
         this.heat = 0;
-
     }
-
-
 
     shoot(x,y) {
         //console.log(`SHOOT ${x},${y}`);
@@ -37,6 +34,8 @@ export default class Laser extends FueledLocation {
                     this.testCircle.lineStyle(5,0xff0000);
                     this.testCircle.strokeCircleShape(this.hitCircle);
                     this.testCircle.closePath();
+                    // ultimately we won't draw it at all, for now hide it
+                    this.testCircle.setAlpha(0);
                 }
             }
             this.heat++;
@@ -56,14 +55,23 @@ export default class Laser extends FueledLocation {
         return this.isShooting;
     }
 
-    // obviously an array or something.... for now just make the things explode =)
-    lockTarget(mother, fighter) {
+    // will need an array of fighters but otherwise this is mostly decent?
+    lockTarget(mother, fighter, bombList) {
         var victim = null;
-        if (Phaser.Geom.Circle.ContainsPoint(this.hitCircle, mother.sprite)) {
+        if (typeof mother != "undefined" && Phaser.Geom.Circle.ContainsPoint(this.hitCircle, mother.sprite)) {
             victim = mother;
         }
-        if (Phaser.Geom.Circle.ContainsPoint(this.hitCircle, fighter.sprite)) {
+        if (typeof fighter != "undefined" && Phaser.Geom.Circle.ContainsPoint(this.hitCircle, fighter.sprite)) {
             victim = fighter;
+        }
+        for (var b=0;b<bombList.length;b++) {
+            if (Phaser.Geom.Circle.ContainsPoint(this.hitCircle, bombList[b].sprite)) {
+                victim=bombList[b];
+                break;
+            }
+        }
+        if (victim != null) {
+            this.shoot(-1,-1);
         }
         return victim;
     }

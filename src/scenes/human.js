@@ -29,6 +29,8 @@ export default class Human {
     getLocation() {//TODO: Unnecessary?
         return this.location;
     }
+
+    //TODO: THESE ARE TOO GENERAL!!!!!!!
     isCarrying() {
         return this.carrying;
     }
@@ -41,6 +43,8 @@ export default class Human {
     hasGas() {
         return this.carrying == Constant.GAS;
     }
+
+    //TODO: these are better!!!!!!!!!!!
     nowHasThing() {
         this.carrying = Constant.THING;
         this.sprite.setFrame("flatman/man1thing").setOrigin(0,0);

@@ -1,8 +1,6 @@
 import Location from "./location.js";
-//import { assetsDPR, WIDTH, HEIGHT } from '../index.js';
 import Sprite from "../sprite.js";
 import {getLocationX, getLocationY} from "./util.js";
-//import Constant from "../constants.js";
 
 export default class FueledLocation extends Location {
     constructor (game,spriteName,spot) {

@@ -1,3 +1,4 @@
+//TODO: which of these are still relevant?!
 const Constant = {
   LEFT: 0,
   RIGHT: 1,

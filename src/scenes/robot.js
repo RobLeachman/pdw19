@@ -52,8 +52,8 @@ export default class Robot {
         this.didTest = true;
     }
 
-    act(world) { // we need to know the state of the world but shouldn't have to update it here
-                 // just now we need to know if the bot arrives at the base and it is full
+    act(world) { // we need to know the state of the world but should never update it here
+                 // right now, we need to know if the bot arrives at the base and it is full
         var result = {
             affected: -1,
             affect: -1
@@ -145,7 +145,6 @@ export default class Robot {
                     //nothing to do right now, except get more rest
                     break;
             }
-
         }
         return result;
     }

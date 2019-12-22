@@ -40,7 +40,7 @@ console.log('WIDTH = ', WIDTH);
 console.log('HEIGHT = ', HEIGHT);
 
 const gameConfig = {
-  backgroundColor: 0x111111,
+  backgroundColor: 0x000000,
 
   scale: {
     parent: 'phaser-game',

@@ -15,16 +15,13 @@ export default class Shields extends FueledLocation {
         super(game,spriteName,spot);
         this.built = true;
 
-                    //this.hitRect = new Phaser.Geom.Rectangle(318*assetsDPR,310*assetsDPR,270*assetsDPR,20*assetsDPR);
-
-        //this.shieldBody = this.game.add.rectangle(318*assetsDPR, 310*assetsDPR, 270*assetsDPR, 20*assetsDPR, 0x00ff00).setOrigin(0,0);
         this.shieldBody = this.game.add.rectangle(0, 310*assetsDPR, 2270*assetsDPR, 20*assetsDPR, 0x00ff00).setOrigin(0,0);
         this.shieldBody.setAlpha(0);
         this.game.physics.add.existing(this.shieldBody, false);
         this.shieldBody.body.immovable = true;
         this.shieldBody.body.allowGravity = false;
 
-        this.level = 30;
+        this.level = 100;
         var newTop = this.paintShieldBars(this.level);
         if (newTop > 0) {
             //console.log(`new top ${newTop}`);
@@ -33,33 +30,35 @@ export default class Shields extends FueledLocation {
         this.oldLevel = this.level;
 
         this.chargeLevel = 100;
-        this.chargeRate = 8;
+        this.chargeRate = 220;
         this.chargeCount = 0;
     }
 
     getBlock() {
-        //console.log("DEFENDER");
-        //console.log(`y=${this.shieldBody.y}`);
         return this.shieldBody; //TODO: perhaps we can use shieldPix?
     }
 
     update() {
+        return; //TODO: so much easier to test!
+
         this.chargeCount++;
         if (this.chargeCount < this.chargeRate)
             return;
         this.chargeCount = 0;
         if (this.level < this.chargeLevel)
-            this.level++;
+            this.level+=1;
         var newTop = this.paintShieldBars(this.level);
         if (newTop > 0)
             this.shieldBody.setY(newTop*4);
     }
 
     hit() {
-        this.level = this.level - 20;
+        this.level = this.level - 15;
         if (this.level < 0)
             this.level = 0;
-        this.chargeCount = Number.MAX_VALUE;
+        var newTop = this.paintShieldBars(this.level);
+        if (newTop > 0)
+            this.shieldBody.setY(newTop*4);
     }
 
     doAction(affect) {
@@ -71,16 +70,18 @@ export default class Shields extends FueledLocation {
 
     upgrade() {
         //TODO: how to extend base class function???????????????????????????????????
-        // for now I copied these 2 lines, and there are only 2 lines to copy but...
         this.upgrades++;
         this.upgradeSprite.setFrame(`upgrades/${this.upgrades}`).setOrigin(0,0);
 
         this.chargeLevel += 10;
     }
 
-
-
     // Paint the fancy shield, updating an aggregate of all the bars used to clear the previous paint
+    /*************************************
+     *
+     * Mostly indecipherable, but it works well enough!!
+     *
+     * ********************/
     paintShieldBars() {
         if (this.level == this.oldLevel)
             return -1;
@@ -139,7 +140,6 @@ export default class Shields extends FueledLocation {
             var alpha = (level-bar*10)/10;
             if (alpha>1)
                alpha = 1;
-            //console.log("BAR " + bar + " ALPHA " + alpha);
             //console.log(alpha + " " + shieldBar[bar]);
             if (alpha > 0) {
                 var top = bottom - shieldBar[bar] +1;
@@ -147,7 +147,6 @@ export default class Shields extends FueledLocation {
                 shieldPix.fillStyle(this.fullColorHex ((9-bar)*15,25*bar*(10/painted),255), alpha);
                 if (level == 100 && bar==0) {
                     //console.log("top " + (top*shieldScale+offset));
-                    //shieldPix.fillStyle(0xff0000, alpha);
                 }
                 shieldPix.fillRect(318*assetsDPR,(top*shieldScale+offset)*assetsDPR,298*assetsDPR,shieldBar[bar]*shieldScale*assetsDPR);
                 blockHeight += shieldBar[bar]*shieldScale; //accumulate the height of all the bars... TODO: finalSumHack?
@@ -160,11 +159,7 @@ export default class Shields extends FueledLocation {
 
         // the actual collision body
         var shieldTop = (top*shieldScale+offset)*assetsDPR;
-        //console.log(`top=${shieldTop}`);
         this.shieldBody.setY(shieldTop);
-
-        //console.log(`   top block ${blockTop}  height ${blockHeight}`);
-        //this.shieldBody.setY(blockTop);
     }
 
     colorToHex (rgb) {

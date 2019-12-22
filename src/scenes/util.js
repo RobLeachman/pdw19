@@ -68,4 +68,72 @@ function getSpotAtLocation(locationPoint) {
     return map[locationPoint.y][locationPoint.x][2];
 }
 
-export {getLocationX, getLocationY, getMapCoords, getSpotAtLocation};
+// POW!
+var t=0;
+var r=0;
+var d = 200;
+var red=true;
+var craterX;
+var craterY;
+var theGame;
+
+function deathCrater(game,x,y) {
+    if (r==0) {
+        craterX=x;craterY=y;
+        theGame = game;
+        deathCrater_create();
+    } else {
+        deathCrater_update();
+    }
+}
+
+function deathCrater_create() {
+    var craterGraphic = theGame.add.graphics({
+      x: 0,
+      y: 0
+    });
+    craterGraphic.clear();
+    craterGraphic.beginPath();
+    craterGraphic.setDepth(d);
+    if (red) {
+      red = false;
+      craterGraphic.fillStyle(0xff0000,1-r/20);
+    } else {
+      red = true;
+      craterGraphic.fillStyle(0xffffff,1-r/20);
+    }
+    craterGraphic.fillCircle(craterX, craterY,(200-d)*15);
+    r=1;
+}
+
+function deathCrater_update() {
+    if (r>100)
+       return;
+    t++;
+    r++;
+    if (t>2) {
+        t=0;
+        var craterGraphic = theGame.add.graphics({
+          x: 0,
+        y: 0
+        });
+        d--;
+        var alpha = (1-r/100)*1;
+        craterGraphic.clear();
+        craterGraphic.beginPath();
+        craterGraphic.setDepth(d);
+        if (red) {
+          red = false;
+          craterGraphic.fillStyle(0xff0000,alpha);
+        } else {
+          red = true;
+          craterGraphic.fillStyle(0xffffff,alpha);
+        }
+        craterGraphic.fillCircle(craterX, craterY,(200-d)*25*r/50);
+        craterGraphic.closePath();
+
+    }
+}
+
+
+export {getLocationX, getLocationY, getMapCoords, getSpotAtLocation, deathCrater};

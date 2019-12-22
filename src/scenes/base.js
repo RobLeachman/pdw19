@@ -4,7 +4,6 @@ import Sprite from "../sprite.js";
 import {getLocationX, getLocationY} from "./util.js";
 import FueledLocation from "./fueledLocation.js";
 
-//TODO: this should be a class, duh
 export default class Base extends FueledLocation {
     constructor(game, spriteName, spot) {
         super(game,spriteName,spot);
@@ -66,7 +65,7 @@ export default class Base extends FueledLocation {
                 break;
             case Constant.DO_PUTSTUFF:
                 this.botSleeping();
-                this.stashStuff(); //TODO: too simple, will overflow
+                this.stashStuff(); //TODO: too simple, will overflow? revisit
                 break;
             case Constant.DO_DISPATCH:
                 this.botDispatch();
@@ -128,6 +127,4 @@ export default class Base extends FueledLocation {
         }
         return false;
     }
-
-
 }

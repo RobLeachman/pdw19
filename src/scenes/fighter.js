@@ -9,7 +9,6 @@ export default class Fighter {
                          start: 1, end: 8,
                          prefix: 'fighter/fighter'
                      });
-        //console.log(frameNames);
         this.game.anims.create({key:'deadFighter', frames:frameNames, frameRate:20});
 
         this.alive = true;
@@ -27,7 +26,6 @@ export default class Fighter {
             callbackScope: this,
             onComplete: function() {
                 this.moving = false;
-                //console.log("moved");
             }
         });
     }

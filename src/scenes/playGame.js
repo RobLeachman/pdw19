@@ -4,16 +4,28 @@
  * driven by keypresses or swipes,
  * takes stuff and builds things,
  * generators, which make stuff, and need gas,
- * everything somewhat ready to fail altogether
- * (BUG) like when he gets over to the drama stage
+ * everything somewhat ready to fail altogether,
+ * with a instructional clue, and bombs falling,
+ * and death and a laser and an end explosion,
+ * even a sound effect
  *
- * TODO's:
- * - shoot bombs too!
- * -
+ * TODO's: -- all these plus any amount of other things!
+ * - fix laser
+ * - bot logic includes all tasks
+ * - man (human) getter/setter cleanup
+ * - tune up shield recharge, for now it is disabled for easiest testing
+ * - shield "how to extend base class" - easy peasy
+ *
+ * - constant.js? or no?
+ * - base comment about stashStuff and overflow?
+ *
+ * - be sure linter can't do more?
  * - keep working on scaling
  * - vertical map for better phone fun (2.0?)
-
+ * - clean up repo
  */
+
+
 /* global Phaser */
 import { assetsDPR, WIDTH, HEIGHT } from '../index.js';
 import Sprite from "../sprite.js";
@@ -32,6 +44,8 @@ import Laser from "./laser.js";
 import Mother from "./mother.js";
 import Fighter from "./fighter.js";
 import Bomb from "./bomb.js";
+
+import {deathCrater} from "./util.js";
 
 
 // GLOBALS
@@ -61,6 +75,15 @@ var shootAt = {
 
 var gameOver = false;
 
+var drama_left = 330;
+
+var test_bomb_start = 3;//300
+var test_bomb_interval = 200;
+var test_bomb_count = 0;
+var test_bombing = true;
+var deadX, deadY;
+var deathTime=0;
+
 export class PlayGame extends Phaser.Scene {
   constructor() {
     super("PlayGame");
@@ -86,7 +109,7 @@ export class PlayGame extends Phaser.Scene {
         if (noZoom) {
                    funZoom = false;
                    this.cameras.main.setZoom(1); this.cameras.main.setScroll(0,0);
-                   //this.cameras.main.setZoom(3); this.cameras.main.setScroll(200*assetsDPR,100*assetsDPR);
+                   //this.cameras.main.setZoom(3); this.cameras.main.setScroll(200*assetsDPR,100*assetsDPR); //shield debug
         }
 
         // init every location
@@ -116,11 +139,6 @@ export class PlayGame extends Phaser.Scene {
         world.push(this.laser);
         firstGenerator.regenerate(true);
 
-        //TEST!
-//        var testFighter = new Fighter(this);
-        //botFactory.build();
-        //gasFactory.build();
-
 if (!noZoom) {
         this.text = "HEY FIRST, THANKS FOR\nPLAYING MY GAME!\n\n\
 SEE THE BLUE\n\
@@ -137,9 +155,13 @@ YOU'RE AWESOME,\n\
 HAVE FUN AND\n\
 TRY NOT TO DIE!";
         this.instructions = this.add.bitmapText(320*assetsDPR, 10*assetsDPR, 'gameplay-white', this.text ,10*assetsDPR);
+
 }
 
-        // bomb collision test block
+
+        new Sprite(this, 0, 0, "bigBackground", "road4").setOrigin(0,0);
+
+        // bomb collision test block, if the bomb touches this... kablooey
         this.homeBlock = this.add.rectangle(300*assetsDPR, 350*assetsDPR, 329*assetsDPR, 10*assetsDPR, 0xff0000).setOrigin(0,0);
         this.homeBlock.setAlpha(0);
         this.physics.add.existing(this.homeBlock, true);
@@ -157,19 +179,7 @@ TRY NOT TO DIE!";
         this.input.on("pointerup", this.handleSwipe, this);
         this.input.on("pointerdown", this.handleMashing, this);
 
-        this.man.isNowCarrying(Constant.THING);
-
-        // test where we can shoot
-        /*
-        var shootBox = this.add.graphics({
-            x:0,
-            y:0
-        });
-        shootBox.lineStyle(assetsDPR,0xff0000);
-        shootBox.strokeRect(315*assetsDPR,0,300*assetsDPR,360*assetsDPR);
-        shootBox.closePath();
-        */
-
+        this.testNoise = this.sound.add('testNoise');
     }
 
 /**********************************
@@ -177,8 +187,18 @@ TRY NOT TO DIE!";
  **********************************/
 
     update () {
-        if (gameOver)
+        if (gameOver) {
+            if (deathTime++>50)
+                deathCrater(this,deadX,deadY);
+            if (deathTime++>100)
+                this.add.bitmapText(deadX-100, deadY-80, 'gameplay-white', "RELOAD?" ,10*assetsDPR).setDepth(Number.MAX_VALUE);
+            if (deathTime == 250 )
+                this.cameras.main.fade(2000);
+            if (deathTime > 2000) {
+                this.scene.stop();
+            }
             return;
+        }
         try {
             if (!this.man.isMoving() && this.man.getBuffer() > -1) {
                 if (this.man.getBuffer() == Constant.INTERACT) {
@@ -236,48 +256,44 @@ TRY NOT TO DIE!";
                     this.fighter = new Fighter(this);
                     fighterCount = 1;
                 }
-                if (this.motherTimer > 100 && this.bombCount < 1) { //100
-                    this.bomb = new Bomb(this, this.shields, this.homeBlock, this.bombCount, this.cameras.main);
-                    this.bombCount++;
-                    this.bombList.push(this.bomb); //TODO: inadequate, the list will get too long... find previous dead in list and use that slot
-                }
-                if (this.motherTimer > 250 && this.bombCount < 2) { //150
-                    this.bomb = new Bomb(this, this.shields, this.homeBlock, this.bombCount, this.cameras.main);
-                    this.bombCount++;
-                    this.bombList.push(this.bomb);
-                }
-                if (this.motherTimer > 330 && this.bombCount < 3) { //150
-                    this.bomb = new Bomb(this, this.shields, this.homeBlock, this.bombCount, this.cameras.main);
-                    this.bombCount++;
-                    this.bombList.push(this.bomb);
-                }
-                /*
-                if (this.motherTimer > 250 && this.fighter.isAlive()) {
-                    this.fighter.die();
-                }
-                */
             }
+            if (this.motherTimer > 100 && (!funZoom || this.motherTimer > 800)) {
+                if (test_bomb_count++ > test_bomb_start && this.bombList.length < 1) {
+                    this.bomb = new Bomb(this, this.shields, this.homeBlock, this.bombCount, this.cameras.main);
+                    this.bombCount++;
+                    this.bombList.push(this.bomb);
+                }
+                if ((this.bombList.length*test_bomb_interval+test_bomb_start)<test_bomb_count && test_bombing) {
+                    this.bomb = new Bomb(this, this.shields, this.homeBlock, this.bombCount, this.cameras.main);
+                    this.bombCount++;
+                    this.bombList.push(this.bomb);
+                }
+            }
+
 
             this.laser.shoot(shootAt.x, shootAt.y);
             if (this.laser.isShooting) {
-                var victim = this.laser.lockTarget(this.mother, this.fighter);
+                var victim = this.laser.lockTarget(this.mother, this.fighter, this.bombList);
                 var hackDone=1;
                 if (victim != null) {
+                    if (victim instanceof Fighter)
+                       test_bombing = false;
                     hackDone = victim.getShot();
                 } else
                     console.log("miss");
                 if (hackDone < 0) {
+                    this.testNoise.play();
                     this.laser.victory();
                 }
             }
             // check for winner
             for (var b=0;b<this.bombList.length;b++) {
                 if (this.bombList[b].status == 2) {
-                   console.log("IT IS OVER");
                    gameOver = true;
+                   deadX = this.bombList[b].sprite.x; deadY = this.bombList[b].sprite.y;
                    this.cameras.main.flash(500,0xffffff);
-                   this.cameras.main.pan(this.bombList[b].sprite.x, this.bombList[b].sprite.y, 2800, 'Linear');
-                   this.cameras.main.zoomTo(5, 2800);
+                   this.cameras.main.pan(this.bombList[b].sprite.x, this.bombList[b].sprite.y, 1400, 'Linear');
+                   this.cameras.main.zoomTo(5, 1400);
                 }
 
             }
@@ -309,8 +325,6 @@ TRY NOT TO DIE!";
     makeMove(dir) {
         if (funZoom && this.man.location.x == 5 && this.man.location.y == 2 && this.man.moveBuffer == Constant.DOWN) {
             funZoom = false;
-            //this.cameras.main.setZoom(1);
-            //this.cameras.main.setScroll(0,0);
             this.cameras.main.pan(1250, 950, 700, 'Linear');
             this.cameras.main.zoomTo(1, 700);
             this.instructions.setAlpha(0);
@@ -366,7 +380,7 @@ TRY NOT TO DIE!";
 
     handleMashing(e) {
         //console.log(`shoot ${e.downX},${e.downY}`);
-        if (e.downX > 315*assetsDPR && e.downY < 360*assetsDPR) {
+        if (e.downX > drama_left*assetsDPR && e.downY < 360*assetsDPR) {
              shootAt.x = e.downX; shootAt.y = e.downY;
              //console.log("MASH " + shootAt.x + "," + shootAt.y);
         }
@@ -393,13 +407,12 @@ TRY NOT TO DIE!";
             if(swipe.y < -Constant.swipeMinNormal){
                 this.man.setBuffer(Constant.UP);
             }
-        } else if (e.downX > 315*assetsDPR && e.downY < 360*assetsDPR) {
-            //console.log("QUIT");
+        } else if (e.downX > drama_left*assetsDPR && e.downY < 360*assetsDPR) {
+            //console.log("quit shooting?");
             shootAt.x = -1;
         } else {
             //console.log("tap! " + e.downX + "," + e.downY);
             this.man.setBuffer(Constant.INTERACT);
         }
     }
-
 }

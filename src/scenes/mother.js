@@ -14,7 +14,7 @@ export default class Mother {
         this.sprite.on('animationcomplete', this.sheDead, this);
         this.game.tweens.add({
             targets: [this.sprite],
-            duration: 30, //3000
+            duration: 3000, //3000
             x:450*assetsDPR,
             callbackScope: this,
             onComplete: function() {
@@ -63,7 +63,6 @@ export default class Mother {
     }
 
     sheDead(animation, frame) {
-        //console.log("she gone");
         this.sprite.setAlpha(0);
     }
 
