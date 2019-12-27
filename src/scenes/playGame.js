@@ -31,13 +31,13 @@ import { assetsDPR, WIDTH, HEIGHT } from '../index.js';
 import Sprite from "../sprite.js";
 
 import Constant from "../constants.js";
-import {getSpotAtLocation} from "./util.js";
+import {getSpotAtLocation} from "../util.js";
 
-import Human from "./human.js";
+import Human from "../objects/human.js";
+import BotFactory from "../objects/botFactory.js";
+import GasFactory from "../objects/gasFactory.js";
 import Base from "./base.js";
 import Generator from "./generator.js";
-import GasFactory from "./gasFactory.js";
-import BotFactory from "./botFactory.js";
 import Market from "./market.js";
 import Shields from "./shields.js";
 import Laser from "./laser.js";
@@ -45,8 +45,9 @@ import Mother from "./mother.js";
 import Fighter from "./fighter.js";
 import Bomb from "./bomb.js";
 
-import {deathCrater} from "./util.js";
+import {deathCrater} from "../util.js";
 
+var TESTING_noZoom = false; // for testing skip the zoom feature
 
 // GLOBALS
 /* will want these soon
@@ -55,8 +56,7 @@ var gameOptions = {
     testing: 1,
 };
 */
-
-var manStart = { x: 2, y: 1};
+var manStart = { x: 0, y: 0};
 // 2,1 normal start
 // 5,2 is corner
 // 8,3 is laser
@@ -65,7 +65,6 @@ var world = [];
 var bots = [];
 var didFail = false;
 var funZoom = true; // start zoomed on man in center of grid
-var noZoom = false; // for testing, don't zoom
 
 var fighterCount = 0;
 var shootAt = {
@@ -84,18 +83,27 @@ var test_bombing = true;
 var deadX, deadY;
 var deathTime=0;
 
+var loopCount = 0;
+
+
 export class PlayGame extends Phaser.Scene {
   constructor() {
     super("PlayGame");
   }
 
-  create() {
 /**************************************
  * INIT
  **************************************/
+  init(data){
+      this.mobile = data.mobile;
+      console.log(`MOBILE: ${this.mobile}`);
+  }
+
+  create() {
         //let { width, height } = this.cameras.main;
         //width /= assetsDPR;
         //height /= assetsDPR;
+        console.log("PlayGame create " + this.foo);
 
         this.theShield = new Phaser.GameObjects.Rectangle(this,200,200,300,300,0x0000ff,1);
         this.add.text(50*assetsDPR, 330*assetsDPR, "assetsDPR: " + assetsDPR,{ font: '18px Verdana' });
@@ -106,10 +114,10 @@ export class PlayGame extends Phaser.Scene {
 
         this.cameras.main.setZoom(1.50); this.cameras.main.setScroll(-100*assetsDPR,-72*assetsDPR); // perfect!
         //this.cameras.main.setZoom(1.50); this.cameras.main.setScroll(120*assetsDPR,100*assetsDPR); //bottom row
-        if (noZoom) {
-                   funZoom = false;
-                   this.cameras.main.setZoom(1); this.cameras.main.setScroll(0,0);
-                   //this.cameras.main.setZoom(3); this.cameras.main.setScroll(200*assetsDPR,100*assetsDPR); //shield debug
+        if (TESTING_noZoom) {
+            funZoom = false;
+            this.cameras.main.setZoom(1); this.cameras.main.setScroll(0,0);
+            //this.cameras.main.setZoom(3); this.cameras.main.setScroll(200*assetsDPR,100*assetsDPR); //shield debug
         }
 
         // init every location
@@ -139,25 +147,9 @@ export class PlayGame extends Phaser.Scene {
         world.push(this.laser);
         firstGenerator.regenerate(true);
 
-if (!noZoom) {
-        this.text = "HEY FIRST, THANKS FOR\nPLAYING MY GAME!\n\n\
-SEE THE BLUE\n\
-GENERATOR WITH\n\
-THE GREEN THING?\n\
-GO GET IT!\n\n\
-HIT W-A-S-D\nAND SPACEBAR\nOR SWIPE AND TAP.\n\n\
-USE THE THING TO\n\
-BUILD, BUY GAS\n\
-AND ROBOTS.\n\n\
-$50K WINS THE\n\
-GAME.\n\n\
-YOU'RE AWESOME,\n\
-HAVE FUN AND\n\
-TRY NOT TO DIE!";
-        this.instructions = this.add.bitmapText(320*assetsDPR, 10*assetsDPR, 'gameplay-white', this.text ,10*assetsDPR);
-
-}
-
+        if (!TESTING_noZoom) {
+            this.instructions();
+        }
 
         new Sprite(this, 0, 0, "bigBackground", "road4").setOrigin(0,0);
 
@@ -180,13 +172,20 @@ TRY NOT TO DIE!";
         this.input.on("pointerdown", this.handleMashing, this);
 
         this.testNoise = this.sound.add('testNoise');
+        var timeStarted = this.time.now;
+
+        this.recording = [[300, "ArrowRight"],[500, "ArrowRight"]];
+        this.nextRecorded = this.recording.shift();
     }
 
 /**********************************
  * MAINLINE
  **********************************/
 
-    update () {
+    update (time, delta) {
+        var replayTime = this.time.now;
+
+        loopCount++;
         if (gameOver) {
             if (deathTime++>50)
                 deathCrater(this,deadX,deadY);
@@ -199,7 +198,27 @@ TRY NOT TO DIE!";
             }
             return;
         }
+        if (typeof this.nextRecorded != "undefined") {
+            if (replayTime >= this.nextRecorded[0]) {
+                console.log(`now ${replayTime} next ${this.nextRecorded[0]} key ${this.nextRecorded[1]}`);
+                this.doKey(this.nextRecorded[1]);
+                this.nextRecorded = this.recording.shift();;
+            }
+        }
         try {
+            if (this.man.isMoving()) {
+                this.man.doMove(this.loopCount,delta);
+            } else if (this.man.getBuffer() > -1) {
+                if (this.man.getBuffer() == Constant.INTERACT) {
+                    var theManAt = getSpotAtLocation(this.man.location);
+                    if (theManAt !== null) {
+                       world[theManAt].interact(this.man, bots); // pass the bot array to botFactory only
+                    }
+                } else
+                    this.makeMove(this.man.getBuffer());
+                this.man.clearBuffer();
+            }
+            /*
             if (!this.man.isMoving() && this.man.getBuffer() > -1) {
                 if (this.man.getBuffer() == Constant.INTERACT) {
                     var theManAt = getSpotAtLocation(this.man.location);
@@ -211,6 +230,7 @@ TRY NOT TO DIE!";
                 this.man.clearBuffer();
                 //console.log(world[9].getScore());// GET SCORE FROM MARKET
             }
+            */
 
             // PLAN
             // If we can find a resting bot and a generator with a thing, plan to go get it
@@ -218,7 +238,7 @@ TRY NOT TO DIE!";
                 if(bots[b].isResting()) {
                    for(var i=0;i<world.length;i++) {
                        if (world[i] instanceof Generator && world[i].isReadyToCollect()) {
-                           console.log("go get " + i);
+                           //console.log("go get " + i);
                            world[i].collectionPending(); // update the generator, the thing will be collected soon
                            bots[b].getThing(i); // tell this bot to get the thing
                        }
@@ -242,9 +262,9 @@ TRY NOT TO DIE!";
 
             // ACT
             for (var b=0;b<bots.length;b++) {
-                var result = bots[b].act(world); // take the next step in the path, and when we've arrived signal the affected location
+                var result = bots[b].act(world,loopCount,delta); // take the next step in the path, and when we've arrived signal the affected location
                 if (result.affected > 0) {
-                    console.log("DO " + result.affect + " to " + result.affected);
+                    //console.log("DO " + result.affect + " to " + result.affected);
                     world[result.affected].doAction(result.affect);
                 }
             }
@@ -257,7 +277,8 @@ TRY NOT TO DIE!";
                     fighterCount = 1;
                 }
             }
-            if (this.motherTimer > 100 && (!funZoom || this.motherTimer > 800)) {
+            /*
+            if (this.motherTimer > 1000 && (!funZoom || this.motherTimer > 800)) {
                 if (test_bomb_count++ > test_bomb_start && this.bombList.length < 1) {
                     this.bomb = new Bomb(this, this.shields, this.homeBlock, this.bombCount, this.cameras.main);
                     this.bombCount++;
@@ -269,6 +290,7 @@ TRY NOT TO DIE!";
                     this.bombList.push(this.bomb);
                 }
             }
+            */
 
 
             this.laser.shoot(shootAt.x, shootAt.y);
@@ -336,7 +358,14 @@ TRY NOT TO DIE!";
     }
 
     handleKey(e){
-        switch(e.code){
+        var timeKey = this.time.now;
+        console.log(`key: ${timeKey} code ${e.code}`);
+        console.log(e.code);
+        this.doKey(e.code);
+    }
+
+    doKey(keycode) {
+        switch(keycode){
             case "KeyA":
             case "ArrowLeft":
                 this.man.setBuffer(Constant.LEFT);
@@ -375,6 +404,9 @@ TRY NOT TO DIE!";
               this.bombCount++;
               this.bombList.push(this.bomb);
               break;
+            case "KeyX":
+              this.scene.stop();
+              this.scene.resume('Recorder');
         }
     }
 
@@ -414,5 +446,31 @@ TRY NOT TO DIE!";
             //console.log("tap! " + e.downX + "," + e.downY);
             this.man.setBuffer(Constant.INTERACT);
         }
+    }
+
+    instructions() {
+        this.text = "HEY FIRST, THANKS FOR\nPLAYING MY GAME!\n\n\
+SEE THE BLUE\n\
+GENERATOR WITH\n\
+THE GREEN THING?\n\
+GO GET IT!\n\n";
+if (!this.mobile) {
+this.text += "HIT W-A-S-D\nAND SPACEBAR,\n\
+MOUSE TO SHOOT.\n\n";
+} else {
+this.text += "SWIPE AND TAP,\n\
+OR PRESS AND\n\
+HOLD TO SHOOT.\n\n";
+}
+
+this.text += "USE THE THING TO\n\
+BUILD, BUY GAS\n\
+AND ROBOTS.\n\n\
+$50K WINS THE\n\
+GAME.\n\n\
+YOU'RE AWESOME,\n\
+HAVE FUN AND\n\
+TRY NOT TO DIE!";
+        this.instructions = this.add.bitmapText(320*assetsDPR, 10*assetsDPR, 'xolonium-white', this.text ,10*assetsDPR);
     }
 }

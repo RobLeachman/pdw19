@@ -1,5 +1,5 @@
 import Sprite from "../sprite.js";
-import {getLocationX, getLocationY} from "./util.js";
+import {getLocationX, getLocationY} from "../util.js";
 import Robot from "./robot.js";
 
 /**

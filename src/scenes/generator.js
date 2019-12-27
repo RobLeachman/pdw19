@@ -1,7 +1,7 @@
 import Constant from "../constants.js";
 import { assetsDPR } from '../index.js';
 import Sprite from "../sprite.js";
-import {getLocationX, getLocationY} from "./util.js";
+import {getLocationX, getLocationY} from "../util.js";
 
 const VACANT = 0;
 const GENERATING = 1;

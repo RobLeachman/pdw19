@@ -1,7 +1,7 @@
 /* global Phaser */
 import Constant from "../constants.js";
 import Sprite from "../sprite.js";
-import {getLocationX, getLocationY} from "./util.js";
+import {getLocationX, getLocationY} from "../util.js";
 import FueledLocation from "./fueledLocation.js";
 
 export default class Base extends FueledLocation {
@@ -86,7 +86,7 @@ export default class Base extends FueledLocation {
             return (!t.available);
         });
         if (0<=returned) {
-           console.log(`returned ${returned}`);
+           //console.log(`returned ${returned}`);
            this.botList[returned].sprite.setAlpha(1);
            this.botList[returned].available = true;
         } else
@@ -94,12 +94,13 @@ export default class Base extends FueledLocation {
 
     }
     botDispatch() {
-        console.log(this.botList);
+        //console.log("BOTLIST:");
+        //console.log(this.botList);
         var dispatched = this.botList.findIndex(function(t) {
             return (t.available);
         });
         if (0<=dispatched) {
-           console.log(`dispatched ${dispatched}`);
+           //console.log(`dispatched ${dispatched}`);
            this.botList[dispatched].sprite.setAlpha(0);
            this.botList[dispatched].available = false;
         } else

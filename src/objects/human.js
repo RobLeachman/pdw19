@@ -1,6 +1,7 @@
+/* global Phaser */
 import Constant from "../constants.js";
 import { assetsDPR } from '../index.js';
-import {getMapCoords, getSpotAtLocation} from "./util.js";
+import {getMapCoords, getSpotAtLocation} from "../util.js";
 import Sprite from "../sprite.js";
 
 export default class Human {
@@ -12,6 +13,10 @@ export default class Human {
         this.carrying = Constant.NOTHING;
 
         this.sprite  = new Sprite(this.game, getMapCoords(start).x+18, getMapCoords(start).y+72, "bigBackground", "flatman/man0empty").setOrigin(0,0);
+
+        this.speed = Phaser.Math.GetSpeed(500, 1);  // 500 pixels/second is good
+        this.stepPx = new Phaser.Geom.Point(0,0);
+        this.vector = new Phaser.Geom.Point(0,0);
     }
 
     isMoving() {
@@ -92,24 +97,62 @@ export default class Human {
                 }
                 break;
             default:
-                throw ("impossible! " + this.moveBuffer); //today only INTERACT and we won't be here for that
+                throw ("impossible man! " + this.moveBuffer); //today only INTERACT and we won't be here for that
         }
-        var newCoords = getMapCoords(this.location);
-        if (!newCoords) { // moved off the edge or through a building or whatever
+        //console.log(`man goes to ${this.location.x},${this.location.y}`);
+        var nextPx = getMapCoords(this.location);
+        if (!nextPx) { // moved off the edge or through a building or whatever
+            //console.log("psyche");
             this.location.x = oldLocX;
             this.location.y = oldLocY;
             return;
         }
         this.moving = true;
+
+        //console.log(nextPx);
+        this.vector.x = 0; this.vector.y = 0;
+        this.stepPx.x = (nextPx.x+18)*assetsDPR;
+        this.stepPx.y = (nextPx.y+72)*assetsDPR;
+        if (this.sprite.x < this.stepPx.x)
+            this.vector.x = 1;
+        if (this.sprite.x > this.stepPx.x)
+            this.vector.x = -1;
+        if (this.sprite.y < this.stepPx.y)
+            this.vector.y = 1;
+        if (this.sprite.y > this.stepPx.y)
+            this.vector.y = -1;
+    }
+
+    doMove(loopCount, delta) {
+        if (loopCount < 7) {
+            //console.log(`SPRITE ${this.sprite.x},${this.sprite.y}`);
+            //console.log(`step ${this.stepPx.x},${this.stepPx.y}`);
+            //console.log(`delta ${delta} movePixels ${this.speed*delta} newX ${this.sprite.x + this.speed*delta}`);
+        }
+        if ((this.vector.x > 0 && this.sprite.x < this.stepPx.x) ||
+            (this.vector.x < 0 && this.sprite.x > this.stepPx.x) ||
+            (this.vector.y > 0 && this.sprite.y < this.stepPx.y) ||
+            (this.vector.y < 0 && this.sprite.y > this.stepPx.y)) {
+
+            this.sprite.x += this.speed * delta * this.vector.x;
+            this.sprite.y += this.speed * delta * this.vector.y;
+        }
+        else {
+            this.sprite.x = this.stepPx.x; this.sprite.y = this.stepPx.y;
+            this.moving = false;
+        }
+            /*
         this.game.tweens.add({
             targets: [this.sprite],
             duration: 300,
-            x:(newCoords.x+18)*assetsDPR,
-            y:(newCoords.y+72)*assetsDPR,
+            x:(this.newCoords.x+18)*assetsDPR,
+            y:(this.newCoords.y+72)*assetsDPR,
             callbackScope: this,
             onComplete: function() {
                 this.moving = false;
             }
         });
+            */
+
     }
 }

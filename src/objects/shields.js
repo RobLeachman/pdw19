@@ -93,7 +93,7 @@ export default class Shields extends FueledLocation {
             this.shieldPix.destroy();
         }
         if (level < 1) {
-            console.log("oh shit no shield");
+            //console.log("oh shit no shield");
             this.shieldBody.setY(360*assetsDPR);
             return;
         }

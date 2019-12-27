@@ -1,6 +1,6 @@
 import Location from "./location.js";
 import Sprite from "../sprite.js";
-import {getLocationX, getLocationY} from "./util.js";
+import {getLocationX, getLocationY} from "../util.js";
 
 export default class FueledLocation extends Location {
     constructor (game,spriteName,spot) {

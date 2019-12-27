@@ -1,6 +1,6 @@
 import Constant from "../constants.js";
 import Sprite from "../sprite.js";
-import {getLocationX, getLocationY} from "./util.js";
+import {getLocationX, getLocationY} from "../util.js";
 
 export default class GasFactory {
 

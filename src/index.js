@@ -1,7 +1,8 @@
-import 'phaser';
 /* global Phaser */
+import 'phaser';
 
 import { BootGame } from './scenes/bootGame';
+import { Recorder } from './scenes/recorder';
 import { PlayGame } from './scenes/playGame';
 import { TestScene } from './scenes/test';
 
@@ -16,13 +17,9 @@ const graphicsSettings = { best: 1, medium: 0.75, low: 0.5 };
 // but, for now let's be sure it looks nice while testing!
 const DPR = 4; // so it looks nice while testing?
 
-
-
-
 //const { width, height } = window.screen;
 //const width = window.innerWidth;
 //const height = window.innerHeight;
-
 
 // base resolution is 640x480 @4
 //export const WIDTH = Math.round(Math.max(width, height) * DPR);
@@ -41,13 +38,15 @@ console.log('HEIGHT = ', HEIGHT);
 
 const gameConfig = {
   backgroundColor: 0x000000,
+  type: Phaser.WebGL,
 
   scale: {
     parent: 'phaser-game',
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
     width: WIDTH,
-    height: HEIGHT
+    height: HEIGHT,
+    fps: 60
   },
 
   pixelArt:true,
@@ -58,8 +57,9 @@ const gameConfig = {
           debug: false
       }
   },
-  //scene: [BootGame, PlayGame, TestScene]
-  scene: [BootGame, PlayGame]
+  scene: [BootGame, PlayGame, TestScene]
+  //scene: [BootGame, Recorder, PlayGame]
+  //scene: [BootGame, PlayGame]
 };
 
 

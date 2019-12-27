@@ -1,4 +1,4 @@
-import {getLocationX, getLocationY} from "./util.js";
+import {getLocationX, getLocationY} from "../util.js";
 import Sprite from "../sprite.js";
 
 export default class Location {

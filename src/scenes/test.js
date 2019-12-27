@@ -1,12 +1,5 @@
 /* global Phaser */
-import { assetsDPR } from '../index.js';
-import Sprite from "../sprite.js";
-import {deathCrater} from "./util.js"
-
-var t=0;
-var r=0;
-var d = 200;
-var red=true;
+import Simulator from "../objects/simulator.js";
 
 export class TestScene extends Phaser.Scene {
   constructor() {
@@ -15,56 +8,53 @@ export class TestScene extends Phaser.Scene {
   }
 
   create() {
-    deathCrater(this,150,150);
-    /*
-        var thisGame = this;
+    this.add.image(0, 0, "bossScreen").setOrigin(0, 0).setScale(2,2);
 
-        var myDebug = thisGame.add.graphics({
-          x: 0,
-        y: 0
-        });
-        myDebug.clear();
-        myDebug.beginPath();
-        myDebug.setDepth(d);
-        if (red) {
-          red = false;
-          myDebug.fillStyle(0xff0000,1-r/20);
-        } else {
-          red = true;
-          myDebug.fillStyle(0xffffff,1-r/20);
-        }
-        myDebug.fillCircle(200, 200,(200-d)*15);
-        */
+    this.startTime = Date.now(); //record the snapshot of the time when game starts
 
+    this.simulator = new Simulator(this);
+    this.simulator.begin();
+
+    this.input.keyboard.on("keyup", this.handleKey, this);
+
+    this.recording = getCookie("test1");
+    console.log(`raw cookie ${this.recording}`);
   }
 
   update() {
-    if (r>100)
-       return;
-    t++;
-    r++;
-    if (t>2) {
-        t=0;
-        var myDebug = this.add.graphics({
-          x: 0,
-        y: 0
-        });
-        d--;
-        var alpha = (1-r/100)*1;
-        console.log(`r ${r} alpha ${alpha}`);
-        myDebug.clear();
-        myDebug.beginPath();
-        myDebug.setDepth(d);
-        if (red) {
-          red = false;
-          myDebug.fillStyle(0xff0000,alpha);
-        } else {
-          red = true;
-          myDebug.fillStyle(0xffffff,alpha);
-        }
-        myDebug.fillCircle(200, 200,(200-d)*25*r/50);
-        myDebug.closePath();
-
-    }
+    //console.log("tested");
   }
+
+    handleKey(e){
+        var timeKey = Math.round(this.time.now);
+        if (e.code == "KeyX") {
+            console.log("STOP RECORD");
+            setCookie("test1","strinnnnnnnnnnng",7);
+            this.simulator.list();
+        } else
+            this.simulator.record(timeKey, e.code);
+    }
+}
+
+function setCookie(name,value,days) {
+    var expires = "";
+    if (days) {
+        var date = new Date();
+        date.setTime(date.getTime() + (days*24*60*60*1000));
+        expires = "; expires=" + date.toUTCString();
+    }
+    document.cookie = name + "=" + (value || "")  + expires + "; path=/";
+}
+function getCookie(name) {
+    var nameEQ = name + "=";
+    var ca = document.cookie.split(';');
+    for(var i=0;i < ca.length;i++) {
+        var c = ca[i];
+        while (c.charAt(0)==' ') c = c.substring(1,c.length);
+        if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length,c.length);
+    }
+    return null;
+}
+function eraseCookie(name) {
+    document.cookie = name+'=; Max-Age=-99999999;';
 }
