@@ -77,14 +77,17 @@ export default class Robot {
                  // right now, we need to know if the bot arrives at the base and it is full
         var result = {
             affected: -1,
-            affect: -1
+            affect: -1,
+            idle: true
         };
         if (this.moving) {
+            /*
             if (loopCount < 7) {
-                //console.log(`SPRITE ${this.sprite.x},${this.sprite.y}`);
-                //console.log(`step ${this.stepPx.x},${this.stepPx.y}`);
-                //console.log(`delta ${delta} movePixels ${this.speed*delta} newX ${this.sprite.x + this.speed*delta}`);
+                console.log(`SPRITE ${this.sprite.x},${this.sprite.y}`);
+                console.log(`step ${this.stepPx.x},${this.stepPx.y}`);
+                console.log(`delta ${delta} movePixels ${this.speed*delta} newX ${this.sprite.x + this.speed*delta}`);
             }
+            */
             if ((this.vector.x > 0 && this.sprite.x < this.stepPx.x) ||
                 (this.vector.x < 0 && this.sprite.x > this.stepPx.x) ||
                 (this.vector.y > 0 && this.sprite.y < this.stepPx.y) ||
@@ -97,104 +100,110 @@ export default class Robot {
                 this.sprite.x = this.stepPx.x; this.sprite.y = this.stepPx.y;
                 this.moving = false;
             }
+            result.idle = false;
             return result;
         }
-        if (!this.moving) { //TODO: remove this if() and outdent the section!
-            switch (this.state) {
-                case COLLECT:
-                    //console.log("Let's collect! " + this.target);
-                    this.location = new Phaser.Geom.Point(4,2);
-                    this.sprite.setFrame("flatbot/bot0empty").setOrigin(0,0);
-                    this.sprite.setAlpha(1);
-                    this.path = this.target;
-                    this.step = 3;
-                    this.dir = -1;
-                    this.carrying = NOTHING;
-                    this.state = COLLECTING;
 
-                    result.affected = 4;
-                    result.affect = Constant.DO_DISPATCH;
-                    break;
-                case RETURNING:
-                case WAITING:
-                case COLLECTING:
-                case TESTING:
+        switch (this.state) {
+            case COLLECT:
+                //console.log("Let's collect! " + this.target);
+                this.location = new Phaser.Geom.Point(4,2);
+                this.sprite.setFrame("flatbot/bot0empty").setOrigin(0,0);
+                this.sprite.setAlpha(1);
+                this.path = this.target;
+                this.step = 3;
+                this.dir = -1;
+                this.carrying = NOTHING;
+                this.state = COLLECTING;
 
-                    //console.log(paths[this.path]);
-                    //console.log(`step ${this.step} dir ${this.dir}`);
-                    //console.log(`from ${paths[this.path][this.step]} to ${paths[this.path][this.step + this.dir]}`);
+                result.affected = 4;
+                result.affect = Constant.DO_DISPATCH;
+                result.idle = false;
+                break;
+            case RETURNING:
+            case WAITING:
+            case COLLECTING:
+            case TESTING: // the test harness makes the man loop on a single path
 
-                    // for all those states, move to the next spot in the path until path is completed
-                    if (typeof paths[this.path][this.step + this.dir] != "undefined") {
-                        this.moving = true;
+                //console.log(paths[this.path]);
+                //console.log(`step ${this.step} dir ${this.dir}`);
+                //console.log(`from ${paths[this.path][this.step]} to ${paths[this.path][this.step + this.dir]}`);
 
-                        //console.log(`from spot ${this.sprite.x},${this.sprite.y}`);
-                        this.nextStep.x = paths[this.path][this.step + this.dir][0];
-                        this.nextStep.y = paths[this.path][this.step + this.dir][1];
-                        var nextPx = getMapCoords(this.nextStep);
+                // for all those states, move to the next spot in the path until path is completed
+                if (typeof paths[this.path][this.step + this.dir] != "undefined") {
+                    this.moving = true;
+                    result.idle = false;
 
-                        this.vector.x = 0; this.vector.y = 0;
-                        this.stepPx.x = (nextPx.x+18)*assetsDPR;
-                        this.stepPx.y = (nextPx.y+72)*assetsDPR;
-                        if (this.sprite.x < this.stepPx.x)
-                            this.vector.x = 1;
-                        if (this.sprite.x > this.stepPx.x)
-                            this.vector.x = -1;
-                        if (this.sprite.y < this.stepPx.y)
-                            this.vector.y = 1;
-                        if (this.sprite.y > this.stepPx.y)
-                            this.vector.y = -1;
-                        //console.log(`next step ${this.stepPx.x},${this.stepPx.y}`);
-                        this.step += this.dir;
-                        //console.log(`vector ${this.vector.x},${this.vector.y}`);
+                    //console.log(`from spot ${this.sprite.x},${this.sprite.y}`);
+                    this.nextStep.x = paths[this.path][this.step + this.dir][0];
+                    this.nextStep.y = paths[this.path][this.step + this.dir][1];
+                    var nextPx = getMapCoords(this.nextStep);
 
-                    } else { // the bot is at the end of path, what's next?
-                       if (this.state == TESTING) {
-                           testLoops.text = "Loops " + (++this.testLoopCount);
-                           this.dir *= -1;
-                       } else if (this.state == COLLECTING) {
-                           // made it to the generator and got the thing, take it back to the base
-                           this.state = RETURNING;
-                           this.carrying = THING;
-                           this.sprite.setFrame("flatbot/bot1thing").setOrigin(0,0);
-                           this.dir = 1;
+                    this.vector.x = 0; this.vector.y = 0;
+                    this.stepPx.x = (nextPx.x+18)*assetsDPR;
+                    this.stepPx.y = (nextPx.y+72)*assetsDPR;
+                    if (this.sprite.x < this.stepPx.x)
+                        this.vector.x = 1;
+                    if (this.sprite.x > this.stepPx.x)
+                        this.vector.x = -1;
+                    if (this.sprite.y < this.stepPx.y)
+                        this.vector.y = 1;
+                    if (this.sprite.y > this.stepPx.y)
+                        this.vector.y = -1;
+                    //console.log(`next step ${this.stepPx.x},${this.stepPx.y}`);
+                    this.step += this.dir;
+                    //console.log(`vector ${this.vector.x},${this.vector.y}`);
 
-                           result.affected = this.target;
-                           result.affect = Constant.DO_TAKESTUFF;
-                       } else {
-                           // at the base, either store the thing and rest, or if it is full bounce and try again
-                           if (this.carrying == THING) {
-                               if (world[4].fuelBay[0] == 10 && world[4].fuelBay[1] == 10 && world[4].fuelBay[2] == 10) {
-                                   //console.log("base full!");
-                                   this.state = WAITING;
-                                   if (this.path == 13)
-                                      this.path=12;
-                                   else
-                                      this.path = 13;
-                                   this.step = 0;
-                                   this.dir = 1;
-                               } else {
-                                   this.state = RESTING;
-                                   this.sprite.setAlpha(0);
-                                   result.affected = 4;
-                                   result.affect = Constant.DO_PUTSTUFF;
-                               }
+                } else { // the bot is at the end of path, what's next?
+                   if (this.state == TESTING) {
+                       testLoops.text = "Loops " + (++this.testLoopCount);
+                       this.dir *= -1;
+                   } else if (this.state == COLLECTING) {
+                       // made it to the generator and got the thing, take it back to the base
+                       this.state = RETURNING;
+                       this.carrying = THING;
+                       this.sprite.setFrame("flatbot/bot1thing").setOrigin(0,0);
+                       this.dir = 1;
+
+                       result.affected = this.target;
+                       result.affect = Constant.DO_TAKESTUFF;
+                       result.idle = false;
+                   } else {
+                       // at the base, either store the thing and rest, or if it is full bounce and try again
+                       if (this.carrying == THING) {
+                           if (world[4].fuelBay[0] == 10 && world[4].fuelBay[1] == 10 && world[4].fuelBay[2] == 10) { //TODO: should be a method not this hardcode hack
+                               //console.log("base full!");
+                               this.state = WAITING;
+                               if (this.path == 13)
+                                  this.path=12;
+                               else
+                                  this.path = 13;
+                               this.step = 0;
+                               this.dir = 1;
                            } else {
-                               // We can just rest. Tell the base we've arrived, with or without a thing.
                                this.state = RESTING;
                                this.sprite.setAlpha(0);
-
                                result.affected = 4;
-                               result.affect = Constant.DO_RESTBOT;
+                               result.affect = Constant.DO_PUTSTUFF;
+                               result.idle = false;
                            }
+                       } else {
+                           // We can just rest. Tell the base we've arrived, with or without a thing.
+                           this.state = RESTING;
+                           this.sprite.setAlpha(0);
+
+                           result.affected = 4;
+                           result.affect = Constant.DO_RESTBOT;
+                           result.idle = false;
                        }
-                    }
-                    break;
-               case RESTING:
-                    //nothing to do right now, except get more rest
-                    break;
-            }
+                   }
+                }
+                break;
+           case RESTING:
+                //nothing to do right now, except get more rest
+                break;
         }
+
         return result;
     }
 

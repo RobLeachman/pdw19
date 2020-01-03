@@ -9,7 +9,7 @@ export default class Base extends FueledLocation {
         super(game,spriteName,spot);
 
         this.game = game;
-        this.spriteName = spriteName; // TODO: no
+        this.spriteName = spriteName; // TODO: no?
         this.spot = spot;
 
         this.botCount = 0;
@@ -21,6 +21,9 @@ export default class Base extends FueledLocation {
         this.botsAvailable = 10;
         this.botList = [];
         this.botsResting = 0;
+
+        this.name = "Base";
+        this.saveState = ["botCount", "botsAvailable", "botsResting", "fuelBay", "botList"]
 
         // two rows, lazy way
         for (var i=0;i<this.botsAvailable/2;i++) {

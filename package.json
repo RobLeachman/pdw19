@@ -15,7 +15,8 @@
     "webpack-dev-server": "^2.0.0"
   },
   "dependencies": {
-    "phaser": "^3.21.0"
+    "phaser": "^3.21.0",
+    "zipson": "^0.2.11"
   },
   "scripts": {
     "build": "webpack -p"

@@ -26,7 +26,7 @@ export class BootGame extends Phaser.Scene{
         if (0)
             this.scene.start("TestScene");
         else {
-            if (1) {
+            if (0) {
                 this.input.on("pointerup", this.handleClick, this);
             } else {
                 this.scene.start("PlayGame", { mobile: false })

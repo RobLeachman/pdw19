@@ -38,7 +38,8 @@ console.log('HEIGHT = ', HEIGHT);
 
 const gameConfig = {
   backgroundColor: 0x000000,
-  type: Phaser.WebGL,
+  //type: Phaser.WebGL,
+  type: Phaser.AUTO,
 
   scale: {
     parent: 'phaser-game',
@@ -57,9 +58,9 @@ const gameConfig = {
           debug: false
       }
   },
-  scene: [BootGame, PlayGame, TestScene]
+  //scene: [BootGame, PlayGame, TestScene]
   //scene: [BootGame, Recorder, PlayGame]
-  //scene: [BootGame, PlayGame]
+  scene: [BootGame, PlayGame]
 };
 
 

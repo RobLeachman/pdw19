@@ -1,0 +1,58 @@
+1.0
+
+* Simulator
+- Record
+- Replay
+- Save
+- Load
+
+* Robots do all the things
+- refuel idle generator
+- restock shields and laser
+
+* Game start/end
+- winner screen
+- loser screen
+- restart screen
+- title screen
+- instructions screen
+
+* Sound
+- Effects
+- Music
+
+* Shields
+- Recharge animation
+- Upgrades buff strength and recharge speed
+
+* Laser
+- quick shot miss
+- quick shot bomb hit
+- mash hit fighter
+- mash hit mother
+
+* Webpack 4
+* Scaling
+* Timing
+
+* Step-based trainer
+
+* Difficulty levels
+
+1.1
+* Scores
+* High score table
+- local
+- server-based
+* Blur shields
+* Sell animation
+* Achievements
+
+1.2
+* Buffs (installable modules)
+- Upgrades buff shield strength
+- Upgrades buff shield recharge
+- Upgrades buff laser frequency
+- Upgrades buff laser strength
+- Upgrades reduce per-shot/recharge cost
+- Upgrades buff laser frequency

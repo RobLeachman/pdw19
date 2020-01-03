@@ -8,53 +8,34 @@ export class TestScene extends Phaser.Scene {
   }
 
   create() {
-    this.add.image(0, 0, "bossScreen").setOrigin(0, 0).setScale(2,2);
+    //this.add.image(0, 0, "bossScreen").setOrigin(0, 0).setScale(2,2);
 
     this.startTime = Date.now(); //record the snapshot of the time when game starts
 
     this.simulator = new Simulator(this);
-    this.simulator.begin();
 
     this.input.keyboard.on("keyup", this.handleKey, this);
 
-    this.recording = getCookie("test1");
-    console.log(`raw cookie ${this.recording}`);
-  }
-
-  update() {
-    //console.log("tested");
+    //this.recordingRaw = getCookie("test1");
+    //console.log(`raw cookie ${this.recordingRaw}`);
+    //this.simulator.load(this.recordingRaw);
+    this.recording = this.simulator.getRecording();
   }
 
     handleKey(e){
+        console.log(e.code);
         var timeKey = Math.round(this.time.now);
         if (e.code == "KeyX") {
             console.log("STOP RECORD");
-            setCookie("test1","strinnnnnnnnnnng",7);
-            this.simulator.list();
+            //var recording = this.simulator.save();
+            //setCookie("test1",recording,7);
+            this.simulator.putRecording();
+        } else if (e.code == "Backslash") {
+            console.log("RESET");
+            this.simulator.reset();
         } else
             this.simulator.record(timeKey, e.code);
+
     }
 }
 
-function setCookie(name,value,days) {
-    var expires = "";
-    if (days) {
-        var date = new Date();
-        date.setTime(date.getTime() + (days*24*60*60*1000));
-        expires = "; expires=" + date.toUTCString();
-    }
-    document.cookie = name + "=" + (value || "")  + expires + "; path=/";
-}
-function getCookie(name) {
-    var nameEQ = name + "=";
-    var ca = document.cookie.split(';');
-    for(var i=0;i < ca.length;i++) {
-        var c = ca[i];
-        while (c.charAt(0)==' ') c = c.substring(1,c.length);
-        if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length,c.length);
-    }
-    return null;
-}
-function eraseCookie(name) {
-    document.cookie = name+'=; Max-Age=-99999999;';
-}

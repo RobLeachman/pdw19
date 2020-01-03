@@ -19,12 +19,16 @@ const GENERATOR_SPEED=30;
 export default class Generator {
     constructor (game,spriteName,spot) {
         this.game = game;
-        this.spriteName = spriteName;
         this.spot = spot;
+        this.name = "Generator";
+        this.fuel = 0;
 
         this.sprite = new Sprite(this.game, getLocationX(this.spot), getLocationY(this.spot), "bigBackground", spriteName).setOrigin(0,0);
         this.state = VACANT;
         this.collectPending = false;
+
+        this.saveState = ["spot", "fuel", "state"];
+
 
         this.genSprite = new Sprite(this.game, this.sprite.x/assetsDPR+36,this.sprite.y/assetsDPR+40, "bigBackground", "generating/1");
         this.genSprite.alpha = 0;
@@ -90,6 +94,7 @@ export default class Generator {
     makeThing() {
           this.state = GENERATING;
           this.genSprite.alpha = 1;
+          this.genSprite.anims.setTimeScale(.2);
           this.genSprite.anims.play('generateStuff');
           this.genSprite.on('animationcomplete', function() {
               this.state = READY;

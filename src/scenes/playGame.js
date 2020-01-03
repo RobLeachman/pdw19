@@ -27,8 +27,12 @@
 
 
 /* global Phaser */
+var _ = require('lodash/lang');
+
 import { assetsDPR, WIDTH, HEIGHT } from '../index.js';
 import Sprite from "../sprite.js";
+import { stringify } from 'zipson';
+
 
 import Constant from "../constants.js";
 import {getSpotAtLocation} from "../util.js";
@@ -44,10 +48,41 @@ import Market from "../objects/market.js";
 import Mother from "./mother.js";
 import Fighter from "./fighter.js";
 import Bomb from "./bomb.js";
+import Simulator from "../objects/simulator.js";
 
 import {deathCrater} from "../util.js";
 
+var hookDebugMode = "unset";
+// from https://code-boxx.com/javascript-hooks-beginners-guide/
+var hooks = {
+  queue : {},
+
+  add : function (name, fn) {
+  // hooks.add() : add a hook
+  // PARAM name : name of function to add hook to
+  //       fn : function to call
+
+    if (!hooks.queue[name]) {
+      hooks.queue[name] = [];
+    }
+    hooks.queue[name].push(fn);
+  },
+
+  call : function (name, ...params) {
+  // hooks.call() : call the hook functions
+  // PARAM name : name of function to add hook to
+  //       params : parameters
+    if (hookDebugMode != "idle") {
+        if (hooks.queue[name])  {
+          hooks.queue[name].forEach(fn => fn(...params));
+          //delete hooks.queue[name];
+        }
+    }
+  }
+};
+
 var TESTING_noZoom = false; // for testing skip the zoom feature
+var testDebugger = true;
 
 // GLOBALS
 /* will want these soon
@@ -56,7 +91,7 @@ var gameOptions = {
     testing: 1,
 };
 */
-var manStart = { x: 0, y: 0};
+var manStart = { x: 2, y: 0};
 // 2,1 normal start
 // 5,2 is corner
 // 8,3 is laser
@@ -85,6 +120,9 @@ var deathTime=0;
 
 var loopCount = 0;
 
+var recording = false;
+var gameState = {};
+
 
 export class PlayGame extends Phaser.Scene {
   constructor() {
@@ -94,18 +132,18 @@ export class PlayGame extends Phaser.Scene {
 /**************************************
  * INIT
  **************************************/
+  //If you're not sure which plugins you will need when you create your Scene you can install them via the Scene Systems. This must be done in an init method...
+  // https://phaser.io/phaser3/devlog/119
   init(data){
       this.mobile = data.mobile;
-      console.log(`MOBILE: ${this.mobile}`);
+      //console.log(`MOBILE: ${this.mobile}`);
   }
 
   create() {
         //let { width, height } = this.cameras.main;
         //width /= assetsDPR;
         //height /= assetsDPR;
-        console.log("PlayGame create " + this.foo);
 
-        this.theShield = new Phaser.GameObjects.Rectangle(this,200,200,300,300,0x0000ff,1);
         this.add.text(50*assetsDPR, 330*assetsDPR, "assetsDPR: " + assetsDPR,{ font: '18px Verdana' });
         this.add.text(50*assetsDPR, 350*assetsDPR, "WIDTH: " +WIDTH,{ font: '12px Verdana' });
         this.add.text(150*assetsDPR, 350*assetsDPR, "HEIGHT: " +HEIGHT,{ font: '12px Verdana' });
@@ -172,10 +210,108 @@ export class PlayGame extends Phaser.Scene {
         this.input.on("pointerdown", this.handleMashing, this);
 
         this.testNoise = this.sound.add('testNoise');
-        var timeStarted = this.time.now;
 
-        this.recording = [[300, "ArrowRight"],[500, "ArrowRight"]];
-        this.nextRecorded = this.recording.shift();
+        this.simulator = new Simulator(this);
+        this.debugMode = this.simulator.getMode();
+        hookDebugMode = this.debugMode;
+        if (this.debugMode == "play-perfect" || this.debugMode == "play-fast") {
+            this.recording = this.simulator.getRecording(true);
+//const copy = Object.freeze(Object.assign({}, this.recording)); //TODO: use this elsewhere, nice syntax thanks Kyle
+            console.log("DO THIS");
+            this.simulator.list();
+            //console.log(copy);
+            this.nextRecorded = this.recording.shift();
+        }
+
+//TODO: stack a save-state function after each of my hokey saveMan, saveGen...
+/*
+        hooks.add("before", function() {
+            console.log("HOOK BEFORE");
+        });
+        hooks.add("before", function() {
+            console.log("COOL BEANS");
+        });
+*/
+        hooks.add("saveMan", function(theMan) {
+            console.log("saveMan");
+            //console.log(theMan);
+            var manState = {
+                carrying: theMan.carrying,
+                location: theMan.location, //TODO: location is a URL property, use loc or something
+                moveBuffer: theMan.moveBuffer,
+                moving: theMan.moving,
+                speed: theMan.speed,
+                spriteX: theMan.sprite.x,
+                spriteY: theMan.sprite.y,
+                stepPx: theMan.stepPx,
+                vector: theMan.vector
+            };
+            //console.log(manState);
+            gameState["man"] = manState;
+        });
+        hooks.add("saveWorld", function(myObj) { // the objects we can interact with
+            console.log("SAVE WORLD:");
+            //console.log(myObj);
+            if (typeof myObj.name == "undefined") {
+                console.log("Saveworld object has no name!");
+                console.log(myObj);
+                throw ("What is it even?");
+            }
+            if (typeof myObj['saveState'] == "undefined") {
+                console.log("Saveworld object has no state to save!");
+                console.log(myObj);
+                throw (`Saving what now? ${myObj.name}`);
+            }
+
+            var objState = {};
+
+            const saveProps = myObj['saveState'];
+            saveProps.map(p => objState[p] = myObj[p]);
+
+            //console.log(objState);
+
+            if (myObj.name == "Generator")
+                objState.name = myObj.name + objState.spot;
+            else
+                objState.name = myObj.name;
+            console.log(`saving ${objState.name}`);
+            //console.log(objState);
+
+            if (typeof gameState[objState.name] == "undefined") {
+                console.log(`new ${objState.name}`);
+                gameState[objState.name] = Object.freeze(Object.assign({}, objState));
+                console.log(gameState[objState.name]);
+            } else {
+                console.log("just test it");
+                if (_.isEqual(gameState[objState.name], objState))
+                    console.log("NO CHANGE");
+                else
+                    gameState[objState.name] = objState;
+
+
+            }
+            //console.log("current state:");
+            //console.log(gameState);
+        });
+        hooks.add("saveBot", function(theBot) {
+            console.log(theBot);
+            /*
+            var manState = {
+                carrying: theMan.carrying,
+                location: theMan.location, //TODO: location is a URL property, use loc or something
+                moveBuffer: theMan.moveBuffer,
+                moving: theMan.moving,
+                speed: theMan.speed,
+                spriteX: theMan.sprite.x,
+                spriteY: theMan.sprite.y,
+                stepPx: theMan.stepPx,
+                vector: theMan.vector
+            };
+            console.log(manState);
+            */
+        });
+
+        hooks.call("saveMan", this.man);
     }
 
 /**********************************
@@ -199,38 +335,42 @@ export class PlayGame extends Phaser.Scene {
             return;
         }
         if (typeof this.nextRecorded != "undefined") {
-            if (replayTime >= this.nextRecorded[0]) {
-                console.log(`now ${replayTime} next ${this.nextRecorded[0]} key ${this.nextRecorded[1]}`);
-                this.doKey(this.nextRecorded[1]);
+            console.log("replay!");
+            if (this.debugMode == "play-perfect") {
+                if (replayTime >= this.nextRecorded.time) {
+                    //console.log(`now ${replayTime} next ${this.nextRecorded.time} key ${this.nextRecorded.code}`);
+                    this.doKey(this.nextRecorded.code);
+                    this.nextRecorded = this.recording.shift();;
+                }
+            } else { // this.debugMode == "play-fast"
+                this.doKey(this.nextRecorded.code);
                 this.nextRecorded = this.recording.shift();;
             }
         }
         try {
             if (this.man.isMoving()) {
                 this.man.doMove(this.loopCount,delta);
+                hooks.call("saveMan", this.man);
             } else if (this.man.getBuffer() > -1) {
                 if (this.man.getBuffer() == Constant.INTERACT) {
                     var theManAt = getSpotAtLocation(this.man.location);
                     if (theManAt !== null) {
-                       world[theManAt].interact(this.man, bots); // pass the bot array to botFactory only
+                       world[theManAt].interact(this.man, bots); //TODO: pass the bot array to botFactory only
+                       hooks.call("saveWorld", world[theManAt]);
+/*
+            console.log("STUFF");
+            console.log(gameState);
+            var stuffed = this.simulator.stuff(gameState);
+            console.log(stuffed);
+           */
+
                     }
                 } else
                     this.makeMove(this.man.getBuffer());
                 this.man.clearBuffer();
-            }
-            /*
-            if (!this.man.isMoving() && this.man.getBuffer() > -1) {
-                if (this.man.getBuffer() == Constant.INTERACT) {
-                    var theManAt = getSpotAtLocation(this.man.location);
-                    if (theManAt !== null) {
-                       world[theManAt].interact(this.man, bots); // pass the bot array to botFactory only
-                    }
-                } else
-                    this.makeMove(this.man.getBuffer());
-                this.man.clearBuffer();
+                hooks.call("saveMan", this.man);
                 //console.log(world[9].getScore());// GET SCORE FROM MARKET
             }
-            */
 
             // PLAN
             // If we can find a resting bot and a generator with a thing, plan to go get it
@@ -241,6 +381,9 @@ export class PlayGame extends Phaser.Scene {
                            //console.log("go get " + i);
                            world[i].collectionPending(); // update the generator, the thing will be collected soon
                            bots[b].getThing(i); // tell this bot to get the thing
+                           hooks.call("saveWorld", world[i]);
+                           console.log("test bot save!");
+                           hooks.call("saveBot", bots[b]);
                        }
                    }
                 }
@@ -263,9 +406,13 @@ export class PlayGame extends Phaser.Scene {
             // ACT
             for (var b=0;b<bots.length;b++) {
                 var result = bots[b].act(world,loopCount,delta); // take the next step in the path, and when we've arrived signal the affected location
+                if (!result.idle)
+                    //hooks.call("saveBot", bots[b]);
+
                 if (result.affected > 0) {
                     //console.log("DO " + result.affect + " to " + result.affected);
                     world[result.affected].doAction(result.affect);
+                    hooks.call("saveWorld", world[result.affected]);
                 }
             }
 
@@ -353,19 +500,53 @@ export class PlayGame extends Phaser.Scene {
             this.px = this.shields.paintShieldBars(100);
         }
 
-        if (this.man.moveBuffer > -1)
+        if (this.man.moveBuffer > -1) {
+            hooks.call("before");
             this.man.tryMove();
+        }
     }
 
     handleKey(e){
         var timeKey = this.time.now;
-        console.log(`key: ${timeKey} code ${e.code}`);
-        console.log(e.code);
-        this.doKey(e.code);
+        //console.log(`key: ${timeKey} code ${e.code}`);
+        if (e.code != "KeyX" && e.code != "Backslash" && e.code != "Backquote" && e.code != "Equal" && e.code != "Minus") {
+            if (this.simulator.getMode() == "record")
+                this.simulator.record(timeKey, e.code);
+            this.doKey(e.code);
+        } else {
+            switch (e.code) {
+                case "Backquote":
+                    console.log("begin recording");
+                    this.simulator.reset();
+                    this.simulator.setMode("record");
+                    window.location.reload(false);
+                    break;
+                case "KeyX":
+                    console.log("stop recording");
+                    this.simulator.putRecording();
+                    this.simulator.setMode("play");
+                    //window.location.reload(false);
+                    break;
+                case "Equal":
+                    console.log("replay recording");
+                    this.simulator.setMode("play-fast");
+                    window.location.reload(false);
+                    break;
+                case "Minus":
+                    console.log("replay recording");
+                    this.simulator.setMode("play-perfect");
+                    window.location.reload(false);
+                    break;
+                case "Backslash":
+                    console.log("quit replay");
+                    this.simulator.setMode("idle");
+                    break;
+            }
+        }
     }
 
     doKey(keycode) {
-        switch(keycode){
+        switch(keycode) {
             case "KeyA":
             case "ArrowLeft":
                 this.man.setBuffer(Constant.LEFT);
@@ -404,9 +585,7 @@ export class PlayGame extends Phaser.Scene {
               this.bombCount++;
               this.bombList.push(this.bomb);
               break;
-            case "KeyX":
-              this.scene.stop();
-              this.scene.resume('Recorder');
+
         }
     }
 
@@ -449,6 +628,9 @@ export class PlayGame extends Phaser.Scene {
     }
 
     instructions() {
+        if (testDebugger) {
+            this.text = "Tick: start recording\nX: stop recording\n=: replay (fast)\nMinus: replay(perfect)\nBackslash: quit replay\n";
+        } else {
         this.text = "HEY FIRST, THANKS FOR\nPLAYING MY GAME!\n\n\
 SEE THE BLUE\n\
 GENERATOR WITH\n\
@@ -471,6 +653,8 @@ GAME.\n\n\
 YOU'RE AWESOME,\n\
 HAVE FUN AND\n\
 TRY NOT TO DIE!";
+      }
         this.instructions = this.add.bitmapText(320*assetsDPR, 10*assetsDPR, 'xolonium-white', this.text ,10*assetsDPR);
     }
 }
+

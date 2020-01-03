@@ -8,6 +8,9 @@ export default class Market extends Location {
         this.score = 0;
         this.displayScore = this.game.add.bitmapText(325*assetsDPR, 416*assetsDPR, 'gameplay-black', "$0",10*assetsDPR);
         this.displayScore.setAlpha(0);
+        this.name = "Market";
+
+        this.saveState = ["score"]
     }
 
     interact (theMan) {

@@ -9,6 +9,10 @@ export default class GasFactory {
         this.spot = spot;
         this.spriteName = spriteName;
         this.sprite = new Sprite(this.game, getLocationX(this.spot), getLocationY(this.spot), "bigBackground", spriteName).setOrigin(0,0);
+
+        this.name = "GasFactory";
+        this.built = false;
+        this.saveState = ["built"];
     }
 
     interact (theMan) {

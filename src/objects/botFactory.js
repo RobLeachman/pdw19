@@ -9,11 +9,14 @@ export default class BotFactory {
     constructor (game,spot) {
         this.game = game;
         this.spot = spot;
+        this.name = "BotFactory";
 
         this.sprite = new Sprite(this.game, getLocationX(this.spot), getLocationY(this.spot), "bigBackground", "botFactoryPad").setOrigin(0,0);
         this.built = false;
         this.botsAvailable = 10;
         this.botList = [];
+
+        this.saveState = ["built", "botsAvailable"]
 
         // two rows, lazy way
         for (var i=0;i<this.botsAvailable/2;i++) {

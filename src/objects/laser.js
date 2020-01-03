@@ -11,6 +11,8 @@ export default class Laser extends FueledLocation {
 
         this.isShooting = false;
         this.heat = 0;
+        this.name = "Laser";
+        this.saveState = ["fuelBay", "upgrades"];
     }
 
     shoot(x,y) {

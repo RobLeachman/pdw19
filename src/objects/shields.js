@@ -32,6 +32,8 @@ export default class Shields extends FueledLocation {
         this.chargeLevel = 100;
         this.chargeRate = 220;
         this.chargeCount = 0;
+        this.name = "Shields";
+        this.saveState = ["fuelBay", "upgrades", "level"];
     }
 
     getBlock() {
