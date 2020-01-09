@@ -28,6 +28,7 @@ export default class Generator {
         this.collectPending = false;
 
         this.saveState = ["spot", "fuel", "state"];
+        this.idle = true; //TODO: unused, perhaps not needed?
 
 
         this.genSprite = new Sprite(this.game, this.sprite.x/assetsDPR+36,this.sprite.y/assetsDPR+40, "bigBackground", "generating/1");
@@ -93,11 +94,13 @@ export default class Generator {
 
     makeThing() {
           this.state = GENERATING;
+          this.idle = false;
           this.genSprite.alpha = 1;
           this.genSprite.anims.setTimeScale(.2);
           this.genSprite.anims.play('generateStuff');
           this.genSprite.on('animationcomplete', function() {
               this.state = READY;
+              this.idle = true;
           }, this);
     }
 
@@ -112,5 +115,8 @@ export default class Generator {
     }
     needsGas() {
         return this.state == EMPTY;
+    }
+    isIdle() {
+        return this.idle;
     }
 }

@@ -20,6 +20,7 @@ export default class Simulator {
   getMode() {
     return this.mode;
   }
+
   setMode(newMode) {
     setCookie("mode", newMode, 7);
   }
